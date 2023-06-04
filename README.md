@@ -1,2 +1,2 @@
-# gOkHttp-ja3spoof
+# gOkHttp ja3spoof
 JA3 spoofing addon for gOkHttp.
