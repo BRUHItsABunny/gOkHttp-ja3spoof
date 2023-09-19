@@ -172,6 +172,21 @@ func (o *Ja3SpoofingOptionV2) Execute(client *http.Client) error {
 	return nil
 }
 
+func (o *Ja3SpoofingOptionV2) ExecuteV2(client *oohttp.Client) error {
+	client.Transport = &oohttp.Transport{
+		// DialContext:           DefaultNetDialer.DialContext,
+		// DialTLSContext:        tlsDialer,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		TLSClientFactory:      o.factoryFunc,
+	}
+
+	return nil
+}
+
 type ExtensionMapFunc func() map[int32]utls.TLSExtension
 
 func BrowserToClientHelloSpec(browser *device_utils.Browser, extensionMapFunc ExtensionMapFunc) (*utls.ClientHelloSpec, error) {
