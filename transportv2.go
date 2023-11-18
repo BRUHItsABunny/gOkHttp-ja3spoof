@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	device_utils "github.com/BRUHItsABunny/go-device-utils"
 	oohttp "github.com/ooni/oohttp"
@@ -12,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -68,6 +70,7 @@ func DefaultExtensionMapV2() map[int32]utls.TLSExtension {
 		5: &utls.StatusRequestExtension{},
 		13: &utls.SignatureAlgorithmsExtension{
 			SupportedSignatureAlgorithms: []utls.SignatureScheme{
+				utls.SignatureScheme(utls.GREASE_PLACEHOLDER),
 				utls.ECDSAWithP256AndSHA256,
 				utls.ECDSAWithP384AndSHA384,
 				utls.ECDSAWithP521AndSHA512,
@@ -100,8 +103,6 @@ func DefaultExtensionMapV2() map[int32]utls.TLSExtension {
 			utls.GREASE_PLACEHOLDER,
 			utls.VersionTLS13,
 			utls.VersionTLS12,
-			utls.VersionTLS11,
-			utls.VersionTLS10,
 		}},
 		44: &utls.CookieExtension{},
 		45: &utls.PSKKeyExchangeModesExtension{Modes: []uint8{
@@ -123,6 +124,7 @@ func DefaultExtensionMapV2() map[int32]utls.TLSExtension {
 			Renegotiation: utls.RenegotiateOnceAsClient,
 		},
 	}
+
 }
 
 func NewJa3SpoofingOptionV2(clientHelloSpec *utls.ClientHelloSpec, clientHelloId *utls.ClientHelloID) *Ja3SpoofingOptionV2 {
@@ -259,6 +261,498 @@ func BrowserToClientHelloSpec(browser *device_utils.Browser, extensionMapFunc Ex
 	return tlsSpec, nil
 }
 
-func Ja3ToClientHelloSpec() (*utls.ClientHelloSpec, error) {
-	return nil, nil
+// Source: https://github.com/gospider007/ja3
+
+// TLSVersion，Ciphers，Extensions，EllipticCurves，EllipticCurvePointFormats
+func createTlsVersion(ver uint16) (tlsMaxVersion uint16, tlsMinVersion uint16, tlsSuppor utls.TLSExtension, err error) {
+	switch ver {
+	case utls.VersionTLS13:
+		tlsMaxVersion = utls.VersionTLS13
+		tlsMinVersion = utls.VersionTLS12
+		tlsSuppor = &utls.SupportedVersionsExtension{
+			Versions: []uint16{
+				utls.GREASE_PLACEHOLDER,
+				utls.VersionTLS13,
+				utls.VersionTLS12,
+			},
+		}
+	case utls.VersionTLS12:
+		tlsMaxVersion = utls.VersionTLS12
+		tlsMinVersion = utls.VersionTLS11
+		tlsSuppor = &utls.SupportedVersionsExtension{
+			Versions: []uint16{
+				utls.GREASE_PLACEHOLDER,
+				utls.VersionTLS12,
+				utls.VersionTLS11,
+			},
+		}
+	case utls.VersionTLS11:
+		tlsMaxVersion = utls.VersionTLS11
+		tlsMinVersion = utls.VersionTLS10
+		tlsSuppor = &utls.SupportedVersionsExtension{
+			Versions: []uint16{
+				utls.GREASE_PLACEHOLDER,
+				utls.VersionTLS11,
+				utls.VersionTLS10,
+			},
+		}
+	default:
+		err = errors.New("ja3Str tls version error")
+	}
+	return
+}
+
+func createCiphers(ciphers []string) ([]uint16, error) {
+	cipherSuites := []uint16{utls.GREASE_PLACEHOLDER}
+	for _, val := range ciphers {
+		if n, err := strconv.ParseUint(val, 10, 16); err != nil {
+			return nil, errors.New("ja3Str cipherSuites error")
+		} else {
+			cipherSuites = append(cipherSuites, uint16(n))
+		}
+	}
+	return cipherSuites, nil
+}
+
+func createCurves(curves []string) (curvesExtension utls.TLSExtension, err error) {
+	curveIds := []utls.CurveID{utls.GREASE_PLACEHOLDER}
+	for _, val := range curves {
+		if n, err := strconv.ParseUint(val, 10, 16); err != nil {
+			return nil, errors.New("ja3Str curves error")
+		} else {
+			curveIds = append(curveIds, utls.CurveID(uint16(n)))
+		}
+	}
+	return &utls.SupportedCurvesExtension{Curves: curveIds}, nil
+}
+
+func createPointFormats(points []string) (curvesExtension utls.TLSExtension, err error) {
+	supportedPoints := []uint8{}
+	for _, val := range points {
+		if n, err := strconv.ParseUint(val, 10, 8); err != nil {
+			return nil, errors.New("ja3Str point error")
+		} else {
+			supportedPoints = append(supportedPoints, uint8(n))
+		}
+	}
+	return &utls.SupportedPointsExtension{SupportedPoints: supportedPoints}, nil
+}
+
+// https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml
+type extensionOption struct {
+	data []byte
+	ext  utls.TLSExtension
+}
+
+func createExtension(extensionId uint16, options ...extensionOption) (utls.TLSExtension, bool) {
+	var option extensionOption
+	if len(options) > 0 {
+		option = options[0]
+	}
+	switch extensionId {
+	case 0:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.SNIExtension))
+			return &extV, true
+		}
+		extV := new(utls.SNIExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		}
+		return extV, true
+	case 5:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.StatusRequestExtension))
+			return &extV, true
+		}
+		extV := new(utls.StatusRequestExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		}
+		return extV, true
+	case 10:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.SupportedCurvesExtension))
+			return &extV, true
+		}
+		extV := new(utls.SupportedCurvesExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		}
+		return extV, true
+	case 11:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.SupportedPointsExtension))
+			return &extV, true
+		}
+		extV := new(utls.SupportedPointsExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		}
+		return extV, true
+	case 13:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.SignatureAlgorithmsExtension))
+			return &extV, true
+		}
+		extV := new(utls.SignatureAlgorithmsExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		} else {
+			extV.SupportedSignatureAlgorithms = []utls.SignatureScheme{
+				utls.ECDSAWithP256AndSHA256,
+				utls.ECDSAWithP384AndSHA384,
+				utls.ECDSAWithP521AndSHA512,
+				utls.PSSWithSHA256,
+				utls.PSSWithSHA384,
+				utls.PSSWithSHA512,
+				utls.PKCS1WithSHA256,
+				utls.PKCS1WithSHA384,
+				utls.PKCS1WithSHA512,
+				utls.ECDSAWithSHA1,
+				utls.PKCS1WithSHA1,
+			}
+		}
+		return extV, true
+	case 16:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.ALPNExtension))
+			return &extV, true
+		}
+		extV := new(utls.ALPNExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		} else {
+			extV.AlpnProtocols = []string{"h2", "http/1.1"}
+		}
+		return extV, true
+	case 17:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.StatusRequestV2Extension))
+			return &extV, true
+		}
+		extV := new(utls.StatusRequestV2Extension)
+		if option.data != nil {
+			extV.Write(option.data)
+		}
+		return extV, true
+	case 18:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.SCTExtension))
+			return &extV, true
+		}
+		extV := new(utls.SCTExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		}
+		return extV, true
+	case 21:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.UtlsPaddingExtension))
+			return &extV, true
+		}
+		extV := new(utls.UtlsPaddingExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		} else {
+			extV.GetPaddingLen = utls.BoringPaddingStyle
+		}
+		return extV, true
+	case 23:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.ExtendedMasterSecretExtension))
+			return &extV, true
+		}
+		extV := new(utls.ExtendedMasterSecretExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		}
+		return extV, true
+	case 24:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.FakeTokenBindingExtension))
+			return &extV, true
+		}
+		extV := new(utls.FakeTokenBindingExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		}
+		return extV, true
+	case 27:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.UtlsCompressCertExtension))
+			return &extV, true
+		}
+		extV := new(utls.UtlsCompressCertExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		} else {
+			extV.Algorithms = []utls.CertCompressionAlgo{utls.CertCompressionBrotli}
+		}
+		return extV, true
+	case 28:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.FakeRecordSizeLimitExtension))
+			return &extV, true
+		}
+		extV := new(utls.FakeRecordSizeLimitExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		}
+		return extV, true
+	case 34:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.FakeDelegatedCredentialsExtension))
+			return &extV, true
+		}
+		extV := new(utls.FakeDelegatedCredentialsExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		}
+		return extV, true
+	case 35:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.SessionTicketExtension))
+			return &extV, true
+		}
+		extV := new(utls.SessionTicketExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		}
+		return extV, true
+	case 41:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.UtlsPreSharedKeyExtension))
+			return &extV, true
+		}
+		extV := new(utls.UtlsPreSharedKeyExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		}
+		return extV, true
+	case 43:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.SupportedVersionsExtension))
+			return &extV, true
+		}
+		extV := new(utls.SupportedVersionsExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		}
+		return extV, true
+	case 44:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.CookieExtension))
+			return &extV, true
+		}
+		extV := new(utls.CookieExtension)
+		if option.data != nil {
+			extV.Cookie = option.data
+		}
+		return extV, true
+	case 45:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.PSKKeyExchangeModesExtension))
+			return &extV, true
+		}
+		extV := new(utls.PSKKeyExchangeModesExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		} else {
+			extV.Modes = []uint8{utls.PskModeDHE}
+		}
+		return extV, true
+	case 50:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.SignatureAlgorithmsCertExtension))
+			return &extV, true
+		}
+		extV := new(utls.SignatureAlgorithmsCertExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		} else {
+			extV.SupportedSignatureAlgorithms = []utls.SignatureScheme{
+				utls.ECDSAWithP256AndSHA256,
+				utls.ECDSAWithP384AndSHA384,
+				utls.ECDSAWithP521AndSHA512,
+				utls.PSSWithSHA256,
+				utls.PSSWithSHA384,
+				utls.PSSWithSHA512,
+				utls.PKCS1WithSHA256,
+				utls.PKCS1WithSHA384,
+				utls.PKCS1WithSHA512,
+				utls.ECDSAWithSHA1,
+				utls.PKCS1WithSHA1,
+			}
+		}
+		return extV, true
+	case 51:
+		if option.ext != nil {
+			extt := new(utls.KeyShareExtension)
+			if keyShares := option.ext.(*utls.KeyShareExtension).KeyShares; keyShares != nil {
+				extt.KeyShares = make([]utls.KeyShare, len(keyShares))
+				copy(extt.KeyShares, keyShares)
+			}
+			return extt, true
+		}
+		extV := new(utls.KeyShareExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		} else {
+			extV.KeyShares = []utls.KeyShare{
+				{Group: utls.CurveID(utls.GREASE_PLACEHOLDER), Data: []byte{0}},
+				{Group: utls.X25519},
+			}
+		}
+		return extV, true
+	case 57:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.QUICTransportParametersExtension))
+			return &extV, true
+		}
+		return new(utls.QUICTransportParametersExtension), true
+	case 13172:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.NPNExtension))
+			return &extV, true
+		}
+		extV := new(utls.NPNExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		}
+		return extV, true
+	case 17513:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.ApplicationSettingsExtension))
+			return &extV, true
+		}
+		extV := new(utls.ApplicationSettingsExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		} else {
+			extV.SupportedProtocols = []string{"h2", "http/1.1"}
+		}
+		return extV, true
+	case 30031:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.FakeChannelIDExtension))
+			return &extV, true
+		}
+		extV := new(utls.FakeChannelIDExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		} else {
+			extV.OldExtensionID = true
+		}
+		return extV, true
+	case 30032:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.FakeChannelIDExtension))
+			return &extV, true
+		}
+		extV := new(utls.FakeChannelIDExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		}
+		return extV, true
+	case 65281:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.RenegotiationInfoExtension))
+			return &extV, true
+		}
+		extV := new(utls.RenegotiationInfoExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		} else {
+			extV.Renegotiation = utls.RenegotiateOnceAsClient
+		}
+		return extV, true
+	default:
+		if option.data != nil {
+			return &utls.GenericExtension{
+				Id:   extensionId,
+				Data: option.data,
+			}, false
+		}
+		return option.ext, false
+	}
+}
+
+func IsGREASEUint16(v uint16) bool {
+	// First byte is same as second byte
+	// and lowest nibble is 0xa
+	return ((v >> 8) == v&0xff) && v&0xf == 0xa
+}
+
+func createExtensions(extensions []string, tlsExtension, curvesExtension, pointExtension utls.TLSExtension) ([]utls.TLSExtension, error) {
+	allExtensions := []utls.TLSExtension{&utls.UtlsGREASEExtension{}}
+	for _, extension := range extensions {
+		var extensionId uint16
+		if n, err := strconv.ParseUint(extension, 10, 16); err != nil {
+			return nil, errors.New("ja3Str extension error,utls not support: " + extension)
+		} else {
+			extensionId = uint16(n)
+		}
+		switch extensionId {
+		case 10:
+			allExtensions = append(allExtensions, curvesExtension)
+		case 11:
+			allExtensions = append(allExtensions, pointExtension)
+		case 43:
+			allExtensions = append(allExtensions, tlsExtension)
+		default:
+			ext, _ := createExtension(extensionId)
+			if ext == nil {
+				if IsGREASEUint16(extensionId) {
+					allExtensions = append(allExtensions, &utls.UtlsGREASEExtension{})
+				}
+				allExtensions = append(allExtensions, &utls.GenericExtension{Id: extensionId})
+			} else {
+				if ext == nil {
+					return nil, errors.New("ja3Str extension error,utls not support: " + extension)
+				}
+				if extensionId == 21 {
+					allExtensions = append(allExtensions, &utls.UtlsGREASEExtension{})
+				}
+				allExtensions = append(allExtensions, ext)
+			}
+		}
+	}
+	return allExtensions, nil
+}
+
+func CreateSpecWithJA3Str(ja3Str string) (clientHelloSpec utls.ClientHelloSpec, err error) {
+	tokens := strings.Split(ja3Str, ",")
+	if len(tokens) != 5 {
+		return clientHelloSpec, errors.New("ja3Str format error")
+	}
+	ver, err := strconv.ParseUint(tokens[0], 10, 16)
+	if err != nil {
+		return clientHelloSpec, errors.New("ja3Str tlsVersion error")
+	}
+	ciphers := strings.Split(tokens[1], "-")
+	extensions := strings.Split(tokens[2], "-")
+	curves := strings.Split(tokens[3], "-")
+	pointFormats := strings.Split(tokens[4], "-")
+	tlsMaxVersion, tlsMinVersion, tlsExtension, err := createTlsVersion(uint16(ver))
+	if err != nil {
+		return clientHelloSpec, err
+	}
+	clientHelloSpec.TLSVersMax = tlsMaxVersion
+	clientHelloSpec.TLSVersMin = tlsMinVersion
+	if clientHelloSpec.CipherSuites, err = createCiphers(ciphers); err != nil {
+		return
+	}
+	curvesExtension, err := createCurves(curves)
+	if err != nil {
+		return clientHelloSpec, err
+	}
+	pointExtension, err := createPointFormats(pointFormats)
+	if err != nil {
+		return clientHelloSpec, err
+	}
+	clientHelloSpec.CompressionMethods = []byte{0}
+	clientHelloSpec.GetSessionID = sha256.Sum256
+	clientHelloSpec.Extensions, err = createExtensions(extensions, tlsExtension, curvesExtension, pointExtension)
+	return
 }
