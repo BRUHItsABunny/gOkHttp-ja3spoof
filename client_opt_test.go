@@ -30,10 +30,6 @@ func TestNewJa3SpoofingOptionV2(t *testing.T) {
 		NewJa3SpoofingOptionV2(&spec, nil),
 		// NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_Auto),
 		// NewProxyOption("http://127.0.0.1:8888"),
-		// NewProxyOption("socks5://127.0.0.1:8889"),
-		// NewProxyOption("http://201.91.82.155:3128"),
-		// NewProxyOption("http://proxy:trWK3kn@192.154.251.136:8000"),
-		// NewProxyOption("socks5://GmBNx0nh3FzAEN2T:mobile;us;;;@proxy.soax.com:9096"),
 	)
 	require.NoError(t, err, "gokhttp.NewHTTPClient: errored unexpectedly.")
 	if hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig == nil {
@@ -110,7 +106,7 @@ func TestNewJa3SpoofingOptionV2(t *testing.T) {
 
 func TestBaseline(t *testing.T) {
 	hClient, err := gokhttp.NewHTTPClient(
-	// gokhttp_client.NewProxyOption("http://127.0.0.1:888"),
+	// gokhttp_client.NewProxyOption("http://127.0.0.1:8888"),
 	// NewProxyOption("socks5://127.0.0.1:8889"),
 	// gokhttp_client.NewProxyOption("http://201.91.82.155:3128"),
 	// NewJa3SpoofingOptionV2(browser, &tls.Config{InsecureSkipVerify: true}),
