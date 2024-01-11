@@ -2,7 +2,7 @@ module github.com/BRUHItsABunny/gOkHttp-ja3spoof
 
 go 1.20
 
-replace github.com/ooni/oohttp v0.6.3 => github.com/BRUHItsABunny/oohttp v0.0.0-20230918235353-04b2891c342c
+replace github.com/ooni/oohttp v0.6.3 => github.com/BRUHItsABunny/oohttp v0.0.0-20240111025854-11c521938971
 
 require (
 	github.com/BRUHItsABunny/gOkHttp v0.3.0
