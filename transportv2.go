@@ -268,12 +268,14 @@ func createTlsVersion(ver uint16) (tlsMaxVersion uint16, tlsMinVersion uint16, t
 	switch ver {
 	case utls.VersionTLS13:
 		tlsMaxVersion = utls.VersionTLS13
-		tlsMinVersion = utls.VersionTLS12
+		tlsMinVersion = utls.VersionTLS10
 		tlsSuppor = &utls.SupportedVersionsExtension{
 			Versions: []uint16{
 				utls.GREASE_PLACEHOLDER,
 				utls.VersionTLS13,
 				utls.VersionTLS12,
+				utls.VersionTLS11,
+				utls.VersionTLS10,
 			},
 		}
 	case utls.VersionTLS12:
