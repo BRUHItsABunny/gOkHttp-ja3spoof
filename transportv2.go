@@ -399,16 +399,18 @@ func createExtension(extensionId uint16, options ...extensionOption) (utls.TLSEx
 		if option.data != nil {
 			extV.Write(option.data)
 		} else {
+			// Default Golang
 			extV.SupportedSignatureAlgorithms = []utls.SignatureScheme{
-				utls.ECDSAWithP256AndSHA256,
-				utls.ECDSAWithP384AndSHA384,
-				utls.ECDSAWithP521AndSHA512,
 				utls.PSSWithSHA256,
+				utls.ECDSAWithP256AndSHA256,
+				utls.Ed25519,
 				utls.PSSWithSHA384,
 				utls.PSSWithSHA512,
 				utls.PKCS1WithSHA256,
 				utls.PKCS1WithSHA384,
 				utls.PKCS1WithSHA512,
+				utls.ECDSAWithP384AndSHA384,
+				utls.ECDSAWithP521AndSHA512,
 				utls.ECDSAWithSHA1,
 				utls.PKCS1WithSHA1,
 			}
@@ -536,6 +538,11 @@ func createExtension(extensionId uint16, options ...extensionOption) (utls.TLSEx
 			return &extV, true
 		}
 		extV := new(utls.SupportedVersionsExtension)
+		extV.Versions = []uint16{
+			utls.GREASE_PLACEHOLDER,
+			utls.VersionTLS13,
+			utls.VersionTLS12,
+		}
 		if option.data != nil {
 			extV.Write(option.data)
 		}
@@ -726,15 +733,15 @@ func CreateSpecWithJA3Str(ja3Str string) (clientHelloSpec utls.ClientHelloSpec, 
 	if len(tokens) != 5 {
 		return clientHelloSpec, errors.New("ja3Str format error")
 	}
-	ver, err := strconv.ParseUint(tokens[0], 10, 16)
-	if err != nil {
-		return clientHelloSpec, errors.New("ja3Str tlsVersion error")
-	}
+	// ver, err := strconv.ParseUint(tokens[0], 10, 16)
+	// if err != nil {
+	// 	return clientHelloSpec, errors.New("ja3Str tlsVersion error")
+	// }
 	ciphers := strings.Split(tokens[1], "-")
 	extensions := strings.Split(tokens[2], "-")
 	curves := strings.Split(tokens[3], "-")
 	pointFormats := strings.Split(tokens[4], "-")
-	tlsMaxVersion, tlsMinVersion, tlsExtension, err := createTlsVersion(uint16(ver))
+	tlsMaxVersion, tlsMinVersion, tlsExtension, err := createTlsVersion(utls.VersionTLS13)
 	if err != nil {
 		return clientHelloSpec, err
 	}
