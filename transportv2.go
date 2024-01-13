@@ -379,6 +379,13 @@ func createExtension(extensionId uint16, options ...extensionOption) (utls.TLSEx
 			return &extV, true
 		}
 		extV := new(utls.SupportedCurvesExtension)
+		extV.Curves = []utls.CurveID{
+			utls.CurveID(utls.GREASE_PLACEHOLDER),
+			utls.X25519,
+			utls.CurveP256,
+			utls.CurveP384,
+		}
+
 		if option.data != nil {
 			extV.Write(option.data)
 		}
@@ -389,6 +396,7 @@ func createExtension(extensionId uint16, options ...extensionOption) (utls.TLSEx
 			return &extV, true
 		}
 		extV := new(utls.SupportedPointsExtension)
+		extV.SupportedPoints = make([]uint8, 1, 1)
 		if option.data != nil {
 			extV.Write(option.data)
 		}
@@ -402,20 +410,15 @@ func createExtension(extensionId uint16, options ...extensionOption) (utls.TLSEx
 		if option.data != nil {
 			extV.Write(option.data)
 		} else {
-			// Default Golang
 			extV.SupportedSignatureAlgorithms = []utls.SignatureScheme{
-				utls.PSSWithSHA256,
 				utls.ECDSAWithP256AndSHA256,
-				utls.Ed25519,
-				utls.PSSWithSHA384,
-				utls.PSSWithSHA512,
+				utls.PSSWithSHA256,
 				utls.PKCS1WithSHA256,
-				utls.PKCS1WithSHA384,
-				utls.PKCS1WithSHA512,
 				utls.ECDSAWithP384AndSHA384,
-				utls.ECDSAWithP521AndSHA512,
-				utls.ECDSAWithSHA1,
-				utls.PKCS1WithSHA1,
+				utls.PSSWithSHA384,
+				utls.PKCS1WithSHA384,
+				utls.PSSWithSHA512,
+				utls.PKCS1WithSHA512,
 			}
 		}
 		return extV, true
@@ -640,7 +643,7 @@ func createExtension(extensionId uint16, options ...extensionOption) (utls.TLSEx
 		if option.data != nil {
 			extV.Write(option.data)
 		} else {
-			extV.SupportedProtocols = []string{"h2", "http/1.1"}
+			extV.SupportedProtocols = []string{"h2"}
 		}
 		return extV, true
 	case 30031:
@@ -741,7 +744,7 @@ func createExtensions(extensions []string, tlsExtension, curvesExtension, pointE
 			ext, _ := createExtension(extensionId)
 			if ext == nil {
 				if IsGREASEUint16(extensionId) {
-					allExtensions = append(allExtensions, &utls.UtlsGREASEExtension{})
+					// allExtensions = append(allExtensions, &utls.UtlsGREASEExtension{})
 				}
 				allExtensions = append(allExtensions, &utls.GenericExtension{Id: extensionId})
 			} else {
@@ -749,13 +752,13 @@ func createExtensions(extensions []string, tlsExtension, curvesExtension, pointE
 					return nil, errors.New("ja3Str extension error,utls not support: " + extension)
 				}
 				if extensionId == 21 {
-					allExtensions = append(allExtensions, &utls.UtlsGREASEExtension{})
+					// allExtensions = append(allExtensions, &utls.UtlsGREASEExtension{})
 				}
 				allExtensions = append(allExtensions, ext)
 			}
 		}
 	}
-	return allExtensions, nil
+	return append(allExtensions, &utls.UtlsGREASEExtension{}), nil
 }
 
 func CreateSpecWithJA3Str(ja3Str string) (clientHelloSpec utls.ClientHelloSpec, err error) {
@@ -771,7 +774,7 @@ func CreateSpecWithJA3Str(ja3Str string) (clientHelloSpec utls.ClientHelloSpec, 
 	extensions := strings.Split(tokens[2], "-")
 	curves := strings.Split(tokens[3], "-")
 	pointFormats := strings.Split(tokens[4], "-")
-	tlsMaxVersion, tlsMinVersion, tlsExtension, err := createTlsVersion(utls.VersionTLS13)
+	tlsMaxVersion, tlsMinVersion, tlsExtension, err := createTlsVersion(utls.VersionTLS12)
 	if err != nil {
 		return clientHelloSpec, err
 	}
