@@ -9,6 +9,7 @@ import (
 	device_utils "github.com/BRUHItsABunny/go-device-utils"
 	oohttp "github.com/ooni/oohttp"
 	utls "github.com/refraction-networking/utls"
+	"github.com/refraction-networking/utls/dicttls"
 	"math/rand"
 	"net"
 	"net/http"
@@ -660,6 +661,33 @@ func createExtension(extensionId uint16, options ...extensionOption) (utls.TLSEx
 			return &extV, true
 		}
 		extV := new(utls.FakeChannelIDExtension)
+		if option.data != nil {
+			extV.Write(option.data)
+		}
+		return extV, true
+	case 65037:
+		// https://github.com/Noooste/azuretls-client/blob/3012ac665ef7984f06feb375daa12e00be044567/ja3.go#L419C3-L436C6
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.GREASEEncryptedClientHelloExtension))
+			return &extV, true
+		}
+		extV := &utls.GREASEEncryptedClientHelloExtension{
+			CandidateCipherSuites: []utls.HPKESymmetricCipherSuite{
+				{
+					KdfId:  dicttls.HKDF_SHA256,
+					AeadId: dicttls.AEAD_AES_128_GCM,
+				},
+				{
+					KdfId:  dicttls.HKDF_SHA256,
+					AeadId: dicttls.AEAD_AES_256_GCM,
+				},
+				{
+					KdfId:  dicttls.HKDF_SHA256,
+					AeadId: dicttls.AEAD_CHACHA20_POLY1305,
+				},
+			},
+			CandidatePayloadLens: []uint16{128, 160},
+		}
 		if option.data != nil {
 			extV.Write(option.data)
 		}
