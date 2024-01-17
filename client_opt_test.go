@@ -7,34 +7,24 @@ import (
 	gokhttp "github.com/BRUHItsABunny/gOkHttp"
 	gokhttp_requests "github.com/BRUHItsABunny/gOkHttp/requests"
 	gokhttp_responses "github.com/BRUHItsABunny/gOkHttp/responses"
-	device_utils "github.com/BRUHItsABunny/go-device-utils"
-	"github.com/davecgh/go-spew/spew"
 	oohttp "github.com/ooni/oohttp"
 	utls "github.com/refraction-networking/utls"
 	"github.com/stretchr/testify/require"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 )
 
-func TestNewJa3SpoofingOptionV2(t *testing.T) {
-	browser := device_utils.AvailableBrowsers["brave"]["1.50.114"]
-	fmt.Println(spew.Sdump(browser))
-
-	// spec, err := CreateSpecWithJA3Str("771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,13-43-23-11-17513-10-5-0-51-65281-16-18-65037-27-35-45,29-23-24,0")
-	spec, err := CreateSpecWithJA3Str("771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,51-45-17513-13-43-0-10-35-18-11-65281-23-5-65037-27-16-21,29-23-24,0")
-	require.NoError(t, err, "CreateSpecWithJA3Str: errored unexpectedly.")
-	fmt.Println(spew.Sdump(spec))
+func TestClientHelloId(t *testing.T) {
 	hClient, err := gokhttp.NewHTTPClient(
-		// gokhttp_client.NewProxyOption("http://127.0.0.1:8888"),
-		// gokhttp_client.NewProxyOption("http://201.91.82.155:3128"),
-		NewJa3SpoofingOptionV2(&spec, nil),
-		// NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_Auto),
-		// NewProxyOption("http://127.0.0.1:8888"),
+		NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_120),
 	)
 	require.NoError(t, err, "gokhttp.NewHTTPClient: errored unexpectedly.")
 	if hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig == nil {
-		hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig = &tls.Config{}
+		hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig = &tls.Config{
+			KeyLogWriter: os.Stdout,
+		}
 	}
 	hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig.InsecureSkipVerify = true
 
@@ -52,46 +42,6 @@ func TestNewJa3SpoofingOptionV2(t *testing.T) {
 	hClient.Transport.(*oohttp.StdlibTransport).Transport.HasCustomWindowUpdate = true
 	hClient.Transport.(*oohttp.StdlibTransport).Transport.WindowUpdateIncrement = 15663105
 	hClient.Transport.(*oohttp.StdlibTransport).Transport.HTTP2PriorityFrameSettings = &oohttp.HTTP2PriorityFrameSettings{
-		PriorityFrames: []*oohttp.HTTP2Priority{
-			// nil,
-			// nil, // 1
-			// nil, // 2
-			// { // 3
-			// 	StreamDep: 0,
-			// 	Exclusive: false,
-			// 	Weight:    200,
-			// },
-			// nil, // 4
-			// { // 5
-			// 	StreamDep: 0,
-			// 	Exclusive: false,
-			// 	Weight:    100,
-			// },
-			// nil, // 6
-			// { // 7
-			// 	StreamDep: 0,
-			// 	Exclusive: false,
-			// 	Weight:    0,
-			// },
-			// nil, // 8
-			// { // 9
-			// 	StreamDep: 7,
-			// 	Exclusive: false,
-			// 	Weight:    200,
-			// },
-			// nil, // 10
-			// { // 11
-			// 	StreamDep: 3,
-			// 	Exclusive: false,
-			// 	Weight:    0,
-			// },
-			// nil, // 12
-			// { // 13
-			// 	StreamDep: 0,
-			// 	Exclusive: false,
-			// 	Weight:    240,
-			// },
-		},
 		HeaderFrame: &oohttp.HTTP2Priority{
 			StreamDep: 0,
 			Exclusive: true,
@@ -99,21 +49,122 @@ func TestNewJa3SpoofingOptionV2(t *testing.T) {
 		},
 	}
 
-	// tr2 := hClient.Transport.(*oohttp.StdlibTransport).Transport.(*oohttp.Transport)
-	// require.NoError(t, err, "NewHTTPClient: errored unexpectedly.")
-	// doRequest(hClient, "https://api64.ipify.org?format=json", t)
-	doRequest(hClient, "https://tls.peet.ws/api/all", t)
+	// doRequest(hClient, "https://tls.peet.ws/api/all", t)
+	doRequest(hClient, "https://google.com/", t)
+}
+
+func TestClientHelloSpec(t *testing.T) {
+	// Copied from https://github.com/refraction-networking/utls/blob/d2768e4eaac0c6f6e7b9e53ccec6ce8e907addd9/u_parrots.go#L662
+	spec := utls.ClientHelloSpec{
+		CipherSuites: []uint16{
+			utls.GREASE_PLACEHOLDER,
+			utls.TLS_AES_128_GCM_SHA256,
+			utls.TLS_AES_256_GCM_SHA384,
+			utls.TLS_CHACHA20_POLY1305_SHA256,
+			utls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			utls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			utls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			utls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			utls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			utls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			utls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			utls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			utls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			utls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			utls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			utls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		},
+		CompressionMethods: []byte{
+			0x00, // compressionNone
+		},
+		Extensions: utls.ShuffleChromeTLSExtensions([]utls.TLSExtension{
+			&utls.UtlsGREASEExtension{},
+			&utls.SNIExtension{},
+			&utls.ExtendedMasterSecretExtension{},
+			&utls.RenegotiationInfoExtension{Renegotiation: utls.RenegotiateOnceAsClient},
+			&utls.SupportedCurvesExtension{Curves: []utls.CurveID{
+				utls.GREASE_PLACEHOLDER,
+				utls.X25519,
+				utls.CurveP256,
+				utls.CurveP384,
+			}},
+			&utls.SupportedPointsExtension{SupportedPoints: []byte{
+				0x00, // pointFormatUncompressed
+			}},
+			&utls.SessionTicketExtension{},
+			&utls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
+			&utls.StatusRequestExtension{},
+			&utls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []utls.SignatureScheme{
+				utls.ECDSAWithP256AndSHA256,
+				utls.PSSWithSHA256,
+				utls.PKCS1WithSHA256,
+				utls.ECDSAWithP384AndSHA384,
+				utls.PSSWithSHA384,
+				utls.PKCS1WithSHA384,
+				utls.PSSWithSHA512,
+				utls.PKCS1WithSHA512,
+			}},
+			&utls.SCTExtension{},
+			&utls.KeyShareExtension{KeyShares: []utls.KeyShare{
+				{Group: utls.CurveID(utls.GREASE_PLACEHOLDER), Data: []byte{0}},
+				{Group: utls.X25519},
+			}},
+			&utls.PSKKeyExchangeModesExtension{Modes: []uint8{
+				utls.PskModeDHE,
+			}},
+			&utls.SupportedVersionsExtension{Versions: []uint16{
+				utls.GREASE_PLACEHOLDER,
+				utls.VersionTLS13,
+				utls.VersionTLS12,
+			}},
+			&utls.UtlsCompressCertExtension{Algorithms: []utls.CertCompressionAlgo{
+				utls.CertCompressionBrotli,
+			}},
+			&utls.ApplicationSettingsExtension{SupportedProtocols: []string{"h2"}},
+			utls.BoringGREASEECH(),
+			&utls.UtlsGREASEExtension{},
+		}),
+	}
+
+	hClient, err := gokhttp.NewHTTPClient(
+		NewJa3SpoofingOptionV2(&spec, nil),
+		NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_120),
+	)
+	require.NoError(t, err, "gokhttp.NewHTTPClient: errored unexpectedly.")
+	if hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig == nil {
+		hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig = &tls.Config{
+			KeyLogWriter: os.Stdout,
+		}
+	}
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig.InsecureSkipVerify = true
+
+	// HTTP 2 stuff
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.HasCustomInitialSettings = true
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.HTTP2SettingsFrameParameters = []int64{
+		65536,   // HeaderTableSize
+		0,       // EnablePush
+		-1,      // MaxConcurrentStreams
+		6291456, // InitialWindowSize
+		-1,      // MaxFrameSize
+		262144,  // MaxHeaderListSize
+	}
+
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.HasCustomWindowUpdate = true
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.WindowUpdateIncrement = 15663105
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.HTTP2PriorityFrameSettings = &oohttp.HTTP2PriorityFrameSettings{
+		HeaderFrame: &oohttp.HTTP2Priority{
+			StreamDep: 0,
+			Exclusive: true,
+			Weight:    255,
+		},
+	}
+
+	// doRequest(hClient, "https://tls.peet.ws/api/all", t)
+	doRequest(hClient, "https://google.com/", t)
 }
 
 func TestBaseline(t *testing.T) {
-	hClient, err := gokhttp.NewHTTPClient(
-	// gokhttp_client.NewProxyOption("http://127.0.0.1:8888"),
-	// NewProxyOption("socks5://127.0.0.1:8889"),
-	// gokhttp_client.NewProxyOption("http://201.91.82.155:3128"),
-	// NewJa3SpoofingOptionV2(browser, &tls.Config{InsecureSkipVerify: true}),
-	// NewProxyOption("http://proxy:trWK3kn@192.154.251.136:8000"),
-	// NewProxyOption("socks5://GmBNx0nh3FzAEN2T:mobile;us;;;@proxy.soax.com:9096"),
-	)
+	hClient, err := gokhttp.NewHTTPClient()
 
 	require.NoError(t, err, "NewHTTPClient: errored unexpectedly.")
 	// doRequest(hClient, "https://api64.ipify.org?format=json", t)
@@ -165,6 +216,9 @@ func doRequest(hClient *http.Client, urlStr string, t *testing.T) {
 
 	fmt.Println(fmt.Sprintf("%s: %s", time.Now().String(), "do"))
 	resp, err := hClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
 	require.NoError(t, err, "hClient.Do: errored unexpectedly.")
 
 	fmt.Println(fmt.Sprintf("%s: %s", time.Now().String(), "resp"))

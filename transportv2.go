@@ -13,6 +13,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -39,7 +40,7 @@ func (c *uconn) ConnectionState() tls.ConnectionState {
 		VerifiedChains:              cs.VerifiedChains,
 		SignedCertificateTimestamps: cs.SignedCertificateTimestamps,
 		OCSPResponse:                cs.OCSPResponse,
-		// TLSUnique:                   cs.TLSUnique,
+		TLSUnique:                   cs.TLSUnique,
 	}
 }
 
@@ -136,16 +137,18 @@ func NewJa3SpoofingOptionV2(clientHelloSpec *utls.ClientHelloSpec, clientHelloId
 		clientHelloId = &utls.HelloRandomized
 	}
 
-	return &Ja3SpoofingOptionV2{ClientHelloSpec: clientHelloSpec, ClientHelloID: clientHelloId}
+	return &Ja3SpoofingOptionV2{ClientHelloSpec: clientHelloSpec, ClientHelloID: clientHelloId, TLSConfig: &tls.Config{KeyLogWriter: os.Stderr}}
 }
 
 func (o *Ja3SpoofingOptionV2) factoryFunc(conn net.Conn, config *tls.Config) oohttp.TLSConn {
 	uConfig := &utls.Config{
-		RootCAs:                     config.RootCAs,
-		NextProtos:                  config.NextProtos,
-		ServerName:                  config.ServerName,
-		InsecureSkipVerify:          config.InsecureSkipVerify,
-		DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
+		RootCAs:                            config.RootCAs,
+		NextProtos:                         config.NextProtos,
+		ServerName:                         config.ServerName,
+		InsecureSkipVerify:                 config.InsecureSkipVerify,
+		DynamicRecordSizingDisabled:        config.DynamicRecordSizingDisabled,
+		KeyLogWriter:                       os.Stdout,
+		PreferSkipResumptionOnNilExtension: true,
 	}
 
 	uTLSConn := utls.UClient(conn, uConfig, *o.ClientHelloID)
