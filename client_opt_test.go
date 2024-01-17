@@ -128,7 +128,6 @@ func TestClientHelloSpec(t *testing.T) {
 
 	hClient, err := gokhttp.NewHTTPClient(
 		NewJa3SpoofingOptionV2(&spec, nil),
-		NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_120),
 	)
 	require.NoError(t, err, "gokhttp.NewHTTPClient: errored unexpectedly.")
 	if hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig == nil {
