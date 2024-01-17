@@ -14,11 +14,24 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
+
+type SpecProvider interface {
+	GetSpec() (*utls.ClientHelloSpec, error)
+}
+
+type RawSpecProvider struct {
+	SpecFunction func() *utls.ClientHelloSpec
+}
+
+func (p *RawSpecProvider) GetSpec() (*utls.ClientHelloSpec, error) {
+	return p.SpecFunction(), nil
+}
 
 // uconn is an adapter from utls.UConn to TLSConn.
 type uconn struct {
@@ -60,7 +73,7 @@ func (c *uconn) HandshakeContext(ctx context.Context) error {
 
 type Ja3SpoofingOptionV2 struct {
 	TLSConfig       *tls.Config
-	ClientHelloSpec *utls.ClientHelloSpec
+	ClientHelloSpec SpecProvider
 	Browser         *device_utils.Browser
 	ClientHelloID   *utls.ClientHelloID
 	ExtensionMap    func() map[int32]utls.TLSExtension
@@ -129,7 +142,7 @@ func DefaultExtensionMapV2() map[int32]utls.TLSExtension {
 
 }
 
-func NewJa3SpoofingOptionV2(clientHelloSpec *utls.ClientHelloSpec, clientHelloId *utls.ClientHelloID) *Ja3SpoofingOptionV2 {
+func NewJa3SpoofingOptionV2(clientHelloSpec SpecProvider, clientHelloId *utls.ClientHelloID) *Ja3SpoofingOptionV2 {
 	if clientHelloSpec != nil {
 		clientHelloId = &utls.HelloCustom
 	}
@@ -138,6 +151,35 @@ func NewJa3SpoofingOptionV2(clientHelloSpec *utls.ClientHelloSpec, clientHelloId
 	}
 
 	return &Ja3SpoofingOptionV2{ClientHelloSpec: clientHelloSpec, ClientHelloID: clientHelloId, TLSConfig: &tls.Config{KeyLogWriter: os.Stderr}}
+}
+
+func deepCopyExtensions(original []utls.TLSExtension) []utls.TLSExtension {
+	copy := make([]utls.TLSExtension, len(original))
+	for i, v := range original {
+		// Check if the value is a pointer
+		if reflect.ValueOf(v).Kind() == reflect.Ptr {
+			// Create a new instance of the type pointed to
+			originalValue := reflect.ValueOf(v).Elem()
+			copiedValue := reflect.New(originalValue.Type())
+
+			// Deep copy the value
+			if originalValue.Kind() == reflect.Struct {
+				copiedStruct := copiedValue.Elem()
+				for j := 0; j < originalValue.NumField(); j++ {
+					field := originalValue.Field(j)
+					if field.CanSet() {
+						copiedStruct.Field(j).Set(field)
+					}
+				}
+			}
+
+			copy[i] = copiedValue.Interface().(utls.TLSExtension)
+		} else {
+			// If it's not a pointer, just assign the value
+			copy[i] = v
+		}
+	}
+	return copy
 }
 
 func (o *Ja3SpoofingOptionV2) factoryFunc(conn net.Conn, config *tls.Config) oohttp.TLSConn {
@@ -153,7 +195,11 @@ func (o *Ja3SpoofingOptionV2) factoryFunc(conn net.Conn, config *tls.Config) ooh
 
 	uTLSConn := utls.UClient(conn, uConfig, *o.ClientHelloID)
 	if *o.ClientHelloID == utls.HelloCustom && o.ClientHelloSpec != nil {
-		if err := uTLSConn.ApplyPreset(o.ClientHelloSpec); err != nil {
+		spec, err := o.ClientHelloSpec.GetSpec()
+		if err != nil {
+			panic(fmt.Errorf("Ja3SpoofingOptionV2.factoryFunc: o.ClientHelloSpec.GetSpec: %w", err))
+		}
+		if err := uTLSConn.ApplyPreset(spec); err != nil {
 			panic(fmt.Errorf("Ja3SpoofingOptionV2.factoryFunc: dialTLSCtx: uTLSConn.ApplyPreset: %w", err))
 		}
 	}
