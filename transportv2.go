@@ -14,7 +14,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -31,6 +30,18 @@ type RawSpecProvider struct {
 
 func (p *RawSpecProvider) GetSpec() (*utls.ClientHelloSpec, error) {
 	return p.SpecFunction(), nil
+}
+
+type JA3SpecProvider struct {
+	JA3 string
+}
+
+func (p *JA3SpecProvider) GetSpec() (*utls.ClientHelloSpec, error) {
+	result, err := CreateSpecWithJA3Str(p.JA3)
+	if err != nil {
+		return nil, fmt.Errorf("CreateSpecWithJA3Str: %w", err)
+	}
+	return &result, nil
 }
 
 // uconn is an adapter from utls.UConn to TLSConn.
@@ -151,35 +162,6 @@ func NewJa3SpoofingOptionV2(clientHelloSpec SpecProvider, clientHelloId *utls.Cl
 	}
 
 	return &Ja3SpoofingOptionV2{ClientHelloSpec: clientHelloSpec, ClientHelloID: clientHelloId, TLSConfig: &tls.Config{KeyLogWriter: os.Stderr}}
-}
-
-func deepCopyExtensions(original []utls.TLSExtension) []utls.TLSExtension {
-	copy := make([]utls.TLSExtension, len(original))
-	for i, v := range original {
-		// Check if the value is a pointer
-		if reflect.ValueOf(v).Kind() == reflect.Ptr {
-			// Create a new instance of the type pointed to
-			originalValue := reflect.ValueOf(v).Elem()
-			copiedValue := reflect.New(originalValue.Type())
-
-			// Deep copy the value
-			if originalValue.Kind() == reflect.Struct {
-				copiedStruct := copiedValue.Elem()
-				for j := 0; j < originalValue.NumField(); j++ {
-					field := originalValue.Field(j)
-					if field.CanSet() {
-						copiedStruct.Field(j).Set(field)
-					}
-				}
-			}
-
-			copy[i] = copiedValue.Interface().(utls.TLSExtension)
-		} else {
-			// If it's not a pointer, just assign the value
-			copy[i] = v
-		}
-	}
-	return copy
 }
 
 func (o *Ja3SpoofingOptionV2) factoryFunc(conn net.Conn, config *tls.Config) oohttp.TLSConn {
@@ -324,8 +306,6 @@ func createTlsVersion(ver uint16) (tlsMaxVersion uint16, tlsMinVersion uint16, t
 				utls.GREASE_PLACEHOLDER,
 				utls.VersionTLS13,
 				utls.VersionTLS12,
-				utls.VersionTLS11,
-				utls.VersionTLS10,
 			},
 		}
 	case utls.VersionTLS12:
@@ -823,7 +803,7 @@ func CreateSpecWithJA3Str(ja3Str string) (clientHelloSpec utls.ClientHelloSpec, 
 	extensions := strings.Split(tokens[2], "-")
 	curves := strings.Split(tokens[3], "-")
 	pointFormats := strings.Split(tokens[4], "-")
-	tlsMaxVersion, tlsMinVersion, tlsExtension, err := createTlsVersion(utls.VersionTLS12)
+	tlsMaxVersion, tlsMinVersion, tlsExtension, err := createTlsVersion(utls.VersionTLS13)
 	if err != nil {
 		return clientHelloSpec, err
 	}

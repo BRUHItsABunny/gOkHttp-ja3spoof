@@ -53,6 +53,45 @@ func TestClientHelloId(t *testing.T) {
 	doRequest(hClient, "https://google.com/", t)
 }
 
+func TestJA3(t *testing.T) {
+	hClient, err := gokhttp.NewHTTPClient(
+		NewJa3SpoofingOptionV2(&JA3SpecProvider{
+			JA3: "771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,13-51-23-0-35-65281-18-65037-5-45-27-17513-16-43-11-10-21,29-23-24,0",
+		}, nil),
+	)
+	require.NoError(t, err, "gokhttp.NewHTTPClient: errored unexpectedly.")
+	if hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig == nil {
+		hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig = &tls.Config{
+			KeyLogWriter: os.Stdout,
+		}
+	}
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig.InsecureSkipVerify = true
+
+	// HTTP 2 stuff
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.HasCustomInitialSettings = true
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.HTTP2SettingsFrameParameters = []int64{
+		65536,   // HeaderTableSize
+		0,       // EnablePush
+		-1,      // MaxConcurrentStreams
+		6291456, // InitialWindowSize
+		-1,      // MaxFrameSize
+		262144,  // MaxHeaderListSize
+	}
+
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.HasCustomWindowUpdate = true
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.WindowUpdateIncrement = 15663105
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.HTTP2PriorityFrameSettings = &oohttp.HTTP2PriorityFrameSettings{
+		HeaderFrame: &oohttp.HTTP2Priority{
+			StreamDep: 0,
+			Exclusive: true,
+			Weight:    255,
+		},
+	}
+
+	// doRequest(hClient, "https://tls.peet.ws/api/all", t)
+	doRequest(hClient, "https://google.com/", t)
+}
+
 func TestClientHelloSpec(t *testing.T) {
 	// Copied from https://github.com/refraction-networking/utls/blob/d2768e4eaac0c6f6e7b9e53ccec6ce8e907addd9/u_parrots.go#L662
 	hClient, err := gokhttp.NewHTTPClient(
