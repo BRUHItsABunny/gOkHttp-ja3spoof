@@ -220,7 +220,7 @@ func BrowserToClientHelloSpec(browser *device_utils.Browser, extensionMapFunc Ex
 
 	// Don't just implement GREASE, tell them the GREASE, except for 21 and 41
 	isChromium := strings.Contains(browser.BrandHeader, "Chromium")
-	extensionsRaw := make([]device_utils.Browser_TLSFingerprint_Extensions, len(browser.TlsFingerprint.Extensions))
+	extensionsRaw := make([]device_utils.Browser_TLSFingerprint_Extension, len(browser.TlsFingerprint.Extensions))
 	copy(extensionsRaw, browser.TlsFingerprint.Extensions)
 	if isChromium {
 		rand.Shuffle(len(extensionsRaw), func(i, j int) {

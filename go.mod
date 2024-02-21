@@ -6,7 +6,7 @@ replace github.com/ooni/oohttp v0.6.7 => github.com/BRUHItsABunny/oohttp v0.0.0-
 
 require (
 	github.com/BRUHItsABunny/gOkHttp v0.3.0
-	github.com/BRUHItsABunny/go-device-utils v0.0.2
+	github.com/BRUHItsABunny/go-device-utils v0.0.4
 	github.com/davecgh/go-spew v1.1.1
 	github.com/ooni/oohttp v0.6.7
 	github.com/refraction-networking/utls v1.6.1
@@ -25,6 +25,6 @@ require (
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
+	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
