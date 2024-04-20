@@ -25,10 +25,12 @@ func TestNewJa3SpoofingOptionV2(t *testing.T) {
 	spec, err := CreateSpecWithJA3Str("771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,51-45-17513-13-43-0-10-35-18-11-65281-23-5-65037-27-16-21,29-23-24,0")
 	require.NoError(t, err, "CreateSpecWithJA3Str: errored unexpectedly.")
 	fmt.Println(spew.Sdump(spec))
+	opt := NewJa3SpoofingOptionV2(&spec, nil)
+	// opt.IsHTTP1 = true // True will force HTTP 1.1
 	hClient, err := gokhttp.NewHTTPClient(
 		// gokhttp_client.NewProxyOption("http://127.0.0.1:8888"),
 		// gokhttp_client.NewProxyOption("http://201.91.82.155:3128"),
-		NewJa3SpoofingOptionV2(&spec, nil),
+		opt,
 		// NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_Auto),
 		// NewProxyOption("http://127.0.0.1:8888"),
 	)

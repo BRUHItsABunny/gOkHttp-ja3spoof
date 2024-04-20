@@ -63,6 +63,7 @@ type Ja3SpoofingOptionV2 struct {
 	Browser         *device_utils.Browser
 	ClientHelloID   *utls.ClientHelloID
 	ExtensionMap    func() map[int32]utls.TLSExtension
+	IsHTTP1         bool
 }
 
 func DefaultExtensionMapV2() map[int32]utls.TLSExtension {
@@ -148,10 +149,25 @@ func (o *Ja3SpoofingOptionV2) factoryFunc(conn net.Conn, config *tls.Config) ooh
 		DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
 	}
 
+	if o.IsHTTP1 {
+		uConfig.NextProtos = []string{
+			"http/1.1",
+		}
+	}
+
 	uTLSConn := utls.UClient(conn, uConfig, *o.ClientHelloID)
 	if *o.ClientHelloID == utls.HelloCustom && o.ClientHelloSpec != nil {
 		if err := uTLSConn.ApplyPreset(o.ClientHelloSpec); err != nil {
 			panic(fmt.Errorf("Ja3SpoofingOptionV2.factoryFunc: dialTLSCtx: uTLSConn.ApplyPreset: %w", err))
+		}
+	}
+
+	if o.IsHTTP1 {
+		for _, ext := range uTLSConn.Extensions {
+			typedExt, ok := ext.(*utls.ALPNExtension)
+			if ok {
+				typedExt.AlpnProtocols = []string{"http/1.1"}
+			}
 		}
 	}
 
@@ -774,7 +790,7 @@ func CreateSpecWithJA3Str(ja3Str string) (clientHelloSpec utls.ClientHelloSpec, 
 	extensions := strings.Split(tokens[2], "-")
 	curves := strings.Split(tokens[3], "-")
 	pointFormats := strings.Split(tokens[4], "-")
-	tlsMaxVersion, tlsMinVersion, tlsExtension, err := createTlsVersion(utls.VersionTLS12)
+	tlsMaxVersion, tlsMinVersion, tlsExtension, err := createTlsVersion(utls.VersionTLS13)
 	if err != nil {
 		return clientHelloSpec, err
 	}
@@ -794,5 +810,10 @@ func CreateSpecWithJA3Str(ja3Str string) (clientHelloSpec utls.ClientHelloSpec, 
 	clientHelloSpec.CompressionMethods = []byte{0}
 	clientHelloSpec.GetSessionID = sha256.Sum256
 	clientHelloSpec.Extensions, err = createExtensions(extensions, tlsExtension, curvesExtension, pointExtension)
+	return
+}
+
+func CreateSpecWithTLSFingerprint(fingerprint *device_utils.Browser_TLSFingerprint) (clientHelloSpec utls.ClientHelloSpec, err error) {
+
 	return
 }
