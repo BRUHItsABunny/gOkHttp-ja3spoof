@@ -149,25 +149,33 @@ func (o *Ja3SpoofingOptionV2) factoryFunc(conn net.Conn, config *tls.Config) ooh
 		DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
 	}
 
+	uTLSConn := utls.UClient(conn, uConfig, utls.HelloCustom)
+	if *o.ClientHelloID != utls.HelloCustom && o.ClientHelloSpec == nil {
+		spec, err := utls.UTLSIdToSpec(*o.ClientHelloID)
+		if err != nil {
+			panic(fmt.Errorf("Failed to convert client hello spec to spec: %w", err))
+		}
+		o.ClientHelloSpec = &spec
+	}
+
 	if o.IsHTTP1 {
 		uConfig.NextProtos = []string{
 			"http/1.1",
 		}
-	}
-
-	uTLSConn := utls.UClient(conn, uConfig, *o.ClientHelloID)
-	if *o.ClientHelloID == utls.HelloCustom && o.ClientHelloSpec != nil {
-		if err := uTLSConn.ApplyPreset(o.ClientHelloSpec); err != nil {
-			panic(fmt.Errorf("Ja3SpoofingOptionV2.factoryFunc: dialTLSCtx: uTLSConn.ApplyPreset: %w", err))
+		for _, ext := range o.ClientHelloSpec.Extensions {
+			switch typedExt := ext.(type) {
+			case *utls.ALPNExtension:
+				typedExt.AlpnProtocols = []string{"http/1.1"}
+				break
+			case *utls.ApplicationSettingsExtension:
+				// typedExt.SupportedProtocols = []string{"http/1.1"}
+				break
+			}
 		}
 	}
-
-	if o.IsHTTP1 {
-		for _, ext := range uTLSConn.Extensions {
-			typedExt, ok := ext.(*utls.ALPNExtension)
-			if ok {
-				typedExt.AlpnProtocols = []string{"http/1.1"}
-			}
+	if o.ClientHelloSpec != nil {
+		if err := uTLSConn.ApplyPreset(o.ClientHelloSpec); err != nil {
+			panic(fmt.Errorf("Ja3SpoofingOptionV2.factoryFunc: dialTLSCtx: uTLSConn.ApplyPreset: %w", err))
 		}
 	}
 
