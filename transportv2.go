@@ -147,6 +147,7 @@ func (o *Ja3SpoofingOptionV2) factoryFunc(conn net.Conn, config *tls.Config) ooh
 		ServerName:                  config.ServerName,
 		InsecureSkipVerify:          config.InsecureSkipVerify,
 		DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
+		KeyLogWriter:                config.KeyLogWriter,
 	}
 
 	uTLSConn := utls.UClient(conn, uConfig, utls.HelloCustom)
@@ -193,6 +194,7 @@ func (o *Ja3SpoofingOptionV2) Execute(client *http.Client) error {
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
 			TLSClientFactory:      o.factoryFunc,
+			TLSClientConfig:       o.TLSConfig,
 		},
 	}
 
