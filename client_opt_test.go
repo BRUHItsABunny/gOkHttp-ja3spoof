@@ -27,7 +27,7 @@ func TestNewJa3SpoofingOptionV2(t *testing.T) {
 	// fmt.Println(spew.Sdump(spec))
 	// opt := NewJa3SpoofingOptionV2(&spec, nil)
 	opt := NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_Auto)
-	opt.IsHTTP1 = true // True will force HTTP 1.1
+	// opt.IsHTTP1 = true // True will force HTTP 1.1
 	hClient, err := gokhttp.NewHTTPClient(
 		// gokhttp_client.NewProxyOption("http://127.0.0.1:8888"),
 		// gokhttp_client.NewProxyOption("http://201.91.82.155:3128"),
@@ -40,9 +40,9 @@ func TestNewJa3SpoofingOptionV2(t *testing.T) {
 		hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig = &tls.Config{}
 	}
 	hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig.InsecureSkipVerify = true
-	hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig.NextProtos = []string{
-		"http/1.1",
-	}
+	// hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig.NextProtos = []string{
+	// 	"http/1.1",
+	// }
 
 	// HTTP 2 stuff
 	hClient.Transport.(*oohttp.StdlibTransport).Transport.HasCustomInitialSettings = true
@@ -109,6 +109,7 @@ func TestNewJa3SpoofingOptionV2(t *testing.T) {
 	// require.NoError(t, err, "NewHTTPClient: errored unexpectedly.")
 	// doRequest(hClient, "https://api64.ipify.org?format=json", t)
 	doRequest(hClient, "https://tls.peet.ws/api/all", t)
+	doRequest(hClient, "https://api64.ipify.org?format=json", t)
 }
 
 func TestBaseline(t *testing.T) {

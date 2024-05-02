@@ -151,7 +151,7 @@ func (o *Ja3SpoofingOptionV2) factoryFunc(conn net.Conn, config *tls.Config) ooh
 	}
 
 	uTLSConn := utls.UClient(conn, uConfig, utls.HelloCustom)
-	if *o.ClientHelloID != utls.HelloCustom && o.ClientHelloSpec == nil {
+	if *o.ClientHelloID != utls.HelloCustom {
 		spec, err := utls.UTLSIdToSpec(*o.ClientHelloID)
 		if err != nil {
 			panic(fmt.Errorf("Failed to convert client hello spec to spec: %w", err))
