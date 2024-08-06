@@ -64,6 +64,7 @@ type Ja3SpoofingOptionV2 struct {
 	ClientHelloID   *utls.ClientHelloID
 	ExtensionMap    func() map[int32]utls.TLSExtension
 	IsHTTP1         bool
+	ECHConfig       *utls.GREASEEncryptedClientHelloExtension
 }
 
 func DefaultExtensionMapV2() map[int32]utls.TLSExtension {
@@ -147,8 +148,8 @@ func (o *Ja3SpoofingOptionV2) factoryFunc(conn net.Conn, config *tls.Config) ooh
 		ServerName:                  config.ServerName,
 		InsecureSkipVerify:          config.InsecureSkipVerify,
 		DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
-		KeyLogWriter:                config.KeyLogWriter,
 	}
+	// uConfig.KeyLogWriter, _ = os.OpenFile(fmt.Sprintf("gokhttp_keys_%d.log", time.Now().Unix()), os.O_CREATE|os.O_RDWR, 0666)
 
 	uTLSConn := utls.UClient(conn, uConfig, utls.HelloCustom)
 	if *o.ClientHelloID != utls.HelloCustom {
@@ -163,17 +164,54 @@ func (o *Ja3SpoofingOptionV2) factoryFunc(conn net.Conn, config *tls.Config) ooh
 		uConfig.NextProtos = []string{
 			"http/1.1",
 		}
-		for _, ext := range o.ClientHelloSpec.Extensions {
-			switch typedExt := ext.(type) {
-			case *utls.ALPNExtension:
+	}
+
+	for _, ext := range o.ClientHelloSpec.Extensions {
+		switch typedExt := ext.(type) {
+		case *utls.ALPNExtension:
+			if o.IsHTTP1 {
 				typedExt.AlpnProtocols = []string{"http/1.1"}
-				break
-			case *utls.ApplicationSettingsExtension:
-				// typedExt.SupportedProtocols = []string{"http/1.1"}
-				break
 			}
+			break
+		case *utls.ApplicationSettingsExtension:
+			if o.IsHTTP1 {
+				// typedExt.SupportedProtocols = []string{"http/1.1"}
+			}
+			break
+		case *utls.GREASEEncryptedClientHelloExtension:
+			// UTLS doesn't like re-using specs, so just always do a deepclone
+			if o.ECHConfig != nil {
+				typedExt = &utls.GREASEEncryptedClientHelloExtension{}
+				if o.ECHConfig.CandidateCipherSuites == nil {
+					typedExt.CandidateCipherSuites = nil
+				} else {
+					for _, suite := range o.ECHConfig.CandidateCipherSuites {
+						typedExt.CandidateCipherSuites = append(typedExt.CandidateCipherSuites, utls.HPKESymmetricCipherSuite{
+							KdfId:  suite.KdfId,
+							AeadId: suite.AeadId,
+						})
+					}
+				}
+				if o.ECHConfig.CandidateConfigIds == nil {
+					typedExt.CandidateConfigIds = nil
+				} else {
+					typedExt.CandidateConfigIds = append([]uint8{}, o.ECHConfig.CandidateConfigIds...)
+				}
+				if o.ECHConfig.EncapsulatedKey == nil {
+					typedExt.EncapsulatedKey = nil
+				} else {
+					typedExt.EncapsulatedKey = append([]byte{}, o.ECHConfig.EncapsulatedKey...)
+				}
+				if o.ECHConfig.CandidatePayloadLens == nil {
+					typedExt.CandidatePayloadLens = nil
+				} else {
+					typedExt.CandidatePayloadLens = append([]uint16{}, o.ECHConfig.CandidatePayloadLens...)
+				}
+			}
+			break
 		}
 	}
+
 	if o.ClientHelloSpec != nil {
 		if err := uTLSConn.ApplyPreset(o.ClientHelloSpec); err != nil {
 			panic(fmt.Errorf("Ja3SpoofingOptionV2.factoryFunc: dialTLSCtx: uTLSConn.ApplyPreset: %w", err))
