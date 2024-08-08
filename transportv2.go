@@ -6,10 +6,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	device_utils "github.com/BRUHItsABunny/go-device-utils"
-	oohttp "github.com/ooni/oohttp"
-	utls "github.com/refraction-networking/utls"
-	"github.com/refraction-networking/utls/dicttls"
 	"math/rand"
 	"net"
 	"net/http"
@@ -17,6 +13,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	device_utils "github.com/BRUHItsABunny/go-device-utils"
+	oohttp "github.com/ooni/oohttp"
+	utls "github.com/refraction-networking/utls"
+	"github.com/refraction-networking/utls/dicttls"
 )
 
 // uconn is an adapter from utls.UConn to TLSConn.
@@ -166,7 +167,7 @@ func (o *Ja3SpoofingOptionV2) factoryFunc(conn net.Conn, config *tls.Config) ooh
 		}
 	}
 
-	for _, ext := range o.ClientHelloSpec.Extensions {
+	for i, ext := range o.ClientHelloSpec.Extensions {
 		switch typedExt := ext.(type) {
 		case *utls.ALPNExtension:
 			if o.IsHTTP1 {
@@ -179,34 +180,27 @@ func (o *Ja3SpoofingOptionV2) factoryFunc(conn net.Conn, config *tls.Config) ooh
 			}
 			break
 		case *utls.GREASEEncryptedClientHelloExtension:
-			// UTLS doesn't like re-using specs, so just always do a deepclone
-			if o.ECHConfig != nil {
-				typedExt = &utls.GREASEEncryptedClientHelloExtension{}
-				if o.ECHConfig.CandidateCipherSuites == nil {
-					typedExt.CandidateCipherSuites = nil
-				} else {
-					for _, suite := range o.ECHConfig.CandidateCipherSuites {
-						typedExt.CandidateCipherSuites = append(typedExt.CandidateCipherSuites, utls.HPKESymmetricCipherSuite{
+			// UTLS doesn't like re-using specs, so just always do a deepclone of values we care about
+			if rECH := o.ECHConfig; rECH != nil {
+				ech := &utls.GREASEEncryptedClientHelloExtension{}
+				if rECH.CandidateCipherSuites != nil {
+					for _, suite := range rECH.CandidateCipherSuites {
+						ech.CandidateCipherSuites = append(ech.CandidateCipherSuites, utls.HPKESymmetricCipherSuite{
 							KdfId:  suite.KdfId,
 							AeadId: suite.AeadId,
 						})
 					}
 				}
-				if o.ECHConfig.CandidateConfigIds == nil {
-					typedExt.CandidateConfigIds = nil
-				} else {
-					typedExt.CandidateConfigIds = append([]uint8{}, o.ECHConfig.CandidateConfigIds...)
+				if rECH.CandidateConfigIds != nil {
+					ech.CandidateConfigIds = append([]uint8{}, rECH.CandidateConfigIds...)
 				}
-				if o.ECHConfig.EncapsulatedKey == nil {
-					typedExt.EncapsulatedKey = nil
-				} else {
-					typedExt.EncapsulatedKey = append([]byte{}, o.ECHConfig.EncapsulatedKey...)
+				if rECH.EncapsulatedKey != nil {
+					ech.EncapsulatedKey = append([]byte{}, rECH.EncapsulatedKey...)
 				}
-				if o.ECHConfig.CandidatePayloadLens == nil {
-					typedExt.CandidatePayloadLens = nil
-				} else {
-					typedExt.CandidatePayloadLens = append([]uint16{}, o.ECHConfig.CandidatePayloadLens...)
+				if rECH.CandidatePayloadLens != nil {
+					ech.CandidatePayloadLens = append([]uint16{}, rECH.CandidatePayloadLens...)
 				}
+				o.ClientHelloSpec.Extensions[i] = ech
 			}
 			break
 		}
