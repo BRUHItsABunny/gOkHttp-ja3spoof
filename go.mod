@@ -2,15 +2,16 @@ module github.com/BRUHItsABunny/gOkHttp-ja3spoof
 
 go 1.21
 
-replace github.com/ooni/oohttp v0.7.1 => github.com/BRUHItsABunny/oohttp v0.0.0-20240420033146-55808fb2e760
+replace github.com/ooni/oohttp v0.7.3 => github.com/BRUHItsABunny/oohttp v0.0.0-20241023001001-8f8c5d094119
+
 
 require (
-	github.com/BRUHItsABunny/gOkHttp v0.3.0
-	github.com/BRUHItsABunny/go-device-utils v0.0.4
+	github.com/BRUHItsABunny/gOkHttp v0.3.3
+	github.com/BRUHItsABunny/go-device-utils v0.0.5
 	github.com/davecgh/go-spew v1.1.1
-	github.com/ooni/oohttp v0.7.1
-	github.com/refraction-networking/utls v1.6.4
-	github.com/stretchr/testify v1.8.1
+	github.com/ooni/oohttp v0.7.3
+	github.com/refraction-networking/utls v1.6.7
+	github.com/stretchr/testify v1.9.0
 )
 
 require (
@@ -22,7 +23,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
-	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
