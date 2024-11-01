@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/BRUHItsABunny/gOkHttp-ja3spoof/compat/tls_compat"
 	"math/rand"
 	"net"
 	"net/http"
@@ -143,13 +144,7 @@ func NewJa3SpoofingOptionV2(clientHelloSpec *utls.ClientHelloSpec, clientHelloId
 }
 
 func (o *Ja3SpoofingOptionV2) factoryFunc(conn net.Conn, config *tls.Config) oohttp.TLSConn {
-	uConfig := &utls.Config{
-		RootCAs:                     config.RootCAs,
-		NextProtos:                  config.NextProtos,
-		ServerName:                  config.ServerName,
-		InsecureSkipVerify:          config.InsecureSkipVerify,
-		DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
-	}
+	uConfig := tls_compat.STDConfigToConfig(config)
 	// uConfig.KeyLogWriter, _ = os.OpenFile(fmt.Sprintf("gokhttp_keys_%d.log", time.Now().Unix()), os.O_CREATE|os.O_RDWR, 0666)
 
 	uTLSConn := utls.UClient(conn, uConfig, utls.HelloCustom)

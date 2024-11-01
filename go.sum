@@ -8,6 +8,7 @@ github.com/BRUHItsABunny/go-device-utils v0.0.5 h1:oJG9s7wte4adX+43coRhtMjmZbpte
 github.com/BRUHItsABunny/go-device-utils v0.0.5/go.mod h1:neXmdKHMQnmv2Whq6t77iPWk945WrP9Op2olIC3N6xk=
 github.com/BRUHItsABunny/oohttp v0.0.0-20240420033146-55808fb2e760 h1:qf8xzATTERQmx33JamxTMMkovntM53EPSOwpVwX+WNQ=
 github.com/BRUHItsABunny/oohttp v0.0.0-20240420033146-55808fb2e760/go.mod h1:6mjMEE8uA2wODu93EABmtmbjy0/YuORNNcRY9Dw2ncw=
+github.com/BRUHItsABunny/oohttp v0.0.0-20241023001001-8f8c5d094119 h1:Mgf8bU1UGkU0qtOeNG5QFFm2+V+cy3us7JIWk4PIQvg=
 github.com/BRUHItsABunny/oohttp v0.0.0-20241023001001-8f8c5d094119/go.mod h1:6mjMEE8uA2wODu93EABmtmbjy0/YuORNNcRY9Dw2ncw=
 github.com/andybalholm/brotli v1.0.6 h1:Yf9fFpf49Zrxb9NlQaluyE92/+X7UVHlhMNJN2sxfOI=
 github.com/andybalholm/brotli v1.0.6/go.mod h1:fO7iG3H7G2nSZ7m0zPUDn85XEX2GTukHGRSepvi9Eig=
