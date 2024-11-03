@@ -145,7 +145,6 @@ func NewJa3SpoofingOptionV2(clientHelloSpec *utls.ClientHelloSpec, clientHelloId
 
 func (o *Ja3SpoofingOptionV2) factoryFunc(conn net.Conn, config *tls.Config) oohttp.TLSConn {
 	uConfig := tls_compat.STDConfigToConfig(config)
-	// uConfig.KeyLogWriter, _ = os.OpenFile(fmt.Sprintf("gokhttp_keys_%d.log", time.Now().Unix()), os.O_CREATE|os.O_RDWR, 0666)
 
 	uTLSConn := utls.UClient(conn, uConfig, utls.HelloCustom)
 	if *o.ClientHelloID != utls.HelloCustom {

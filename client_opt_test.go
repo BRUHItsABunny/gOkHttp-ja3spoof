@@ -3,39 +3,102 @@ package gokhttp_ja3spoof
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	gokhttp "github.com/BRUHItsABunny/gOkHttp"
+	gokhttp_client "github.com/BRUHItsABunny/gOkHttp/client"
 	gokhttp_requests "github.com/BRUHItsABunny/gOkHttp/requests"
 	gokhttp_responses "github.com/BRUHItsABunny/gOkHttp/responses"
 	device_utils "github.com/BRUHItsABunny/go-device-utils"
-	"github.com/davecgh/go-spew/spew"
 	oohttp "github.com/ooni/oohttp"
 	utls "github.com/refraction-networking/utls"
 	"github.com/stretchr/testify/require"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 )
 
-func TestNewJa3SpoofingOptionV2(t *testing.T) {
-	browser := device_utils.AvailableBrowsers["brave"]["1.50.114"]
-	fmt.Println(spew.Sdump(browser))
-
-	// spec, err := CreateSpecWithJA3Str("771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,13-43-23-11-17513-10-5-0-51-65281-16-18-65037-27-35-45,29-23-24,0")
-	// spec, err := CreateSpecWithJA3Str("771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,51-45-17513-13-43-0-10-35-18-11-65281-23-5-65037-27-16-21,29-23-24,0")
-	// require.NoError(t, err, "CreateSpecWithJA3Str: errored unexpectedly.")
-	// fmt.Println(spew.Sdump(spec))
-	// opt := NewJa3SpoofingOptionV2(&spec, nil)
-	opt := NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_Auto)
-	// opt.IsHTTP1 = true // True will force HTTP 1.1
+func TestParseSpec(t *testing.T) {
+	rawData, err := os.ReadFile("peet.json")
+	if err != nil {
+		panic(err)
+	}
+	peetData := &device_utils.PeetResponse{}
+	err = json.Unmarshal(rawData, peetData)
+	if err != nil {
+		panic(err)
+	}
+	browser := &device_utils.Browser{}
+	err = browser.FromPEET(peetData)
+	if err != nil {
+		panic(err)
+	}
+	spec, err := CreateSpecWithTLSFingerprint(browser.TlsFingerprint)
+	if err != nil {
+		panic(err)
+	}
+	opt := NewJa3SpoofingOptionV2(&spec, nil)
 	hClient, err := gokhttp.NewHTTPClient(
-		// gokhttp_client.NewProxyOption("http://127.0.0.1:8888"),
-		// gokhttp_client.NewProxyOption("http://201.91.82.155:3128"),
 		opt,
-		// NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_Auto),
-		// NewProxyOption("http://127.0.0.1:8888"),
 	)
 	require.NoError(t, err, "gokhttp.NewHTTPClient: errored unexpectedly.")
+
+	if hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig == nil {
+		hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig = &tls.Config{}
+	}
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig.InsecureSkipVerify = true
+	// hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig.NextProtos = []string{
+	// 	"http/1.1",
+	// }
+
+	// HTTP 2 stuff
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.HasCustomInitialSettings = true
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.HTTP2SettingsFrameParameters = []int64{
+		65536,   // HeaderTableSize
+		0,       // EnablePush
+		-1,      // MaxConcurrentStreams
+		6291456, // InitialWindowSize
+		-1,      // MaxFrameSize
+		262144,  // MaxHeaderListSize
+	}
+
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.HasCustomWindowUpdate = true
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.WindowUpdateIncrement = 15663105
+	hClient.Transport.(*oohttp.StdlibTransport).Transport.HTTP2PriorityFrameSettings = &oohttp.HTTP2PriorityFrameSettings{
+		PriorityFrames: []*oohttp.HTTP2Priority{},
+		HeaderFrame: &oohttp.HTTP2Priority{
+			StreamDep: 0,
+			Exclusive: true,
+			Weight:    255,
+		},
+	}
+	doRequest(hClient, "https://tls.peet.ws/api/all", t)
+}
+
+func TestNewJa3SpoofingOptionV2(t *testing.T) {
+	// browser := device_utils.AvailableBrowsers["brave"]["1.50.114"]
+	// fmt.Println(spew.Sdump(browser))
+
+	spec, err := CreateSpecWithJA3Str("771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,13-43-23-11-17513-10-5-0-51-65281-16-18-65037-27-35-45,29-23-24,0")
+	// spec, err := CreateSpecWithJA3Str("771,49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,0-5-10-11-13-50-16-17-23-43-65281,29-23-24-25-30,0")
+	// spec, err := CreateSpecWithJA3Str("771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,35-43-65037-17513-13-65281-23-51-45-0-27-10-16-18-11-5,25497-29-23-24,0")
+	// require.NoError(t, err, "CreateSpecWithJA3Str: errored unexpectedly.")
+	// fmt.Println(spew.Sdump(spec))
+	// require.NoError(t, err, "log file: errored unexpectedly.")
+	opt := NewJa3SpoofingOptionV2(&spec, nil)
+	// opt := NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_120_PQ)
+	// opt.IsHTTP1 = true // True will force HTTP 1.1
+
+	tlsLogFile, _ := os.OpenFile(fmt.Sprintf("gokhttp_keys_%d.log", time.Now().Unix()), os.O_CREATE|os.O_RDWR, 0666)
+	hClient, err := gokhttp.NewHTTPClient(
+		opt,
+		// gokhttp_client.NewProxyOption("http://127.0.0.1:8888"),
+		gokhttp_client.NewRawTLSConfigOption(&tls.Config{KeyLogWriter: tlsLogFile}),
+		// NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_Auto),
+	)
+	require.NoError(t, err, "gokhttp.NewHTTPClient: errored unexpectedly.")
+
 	if hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig == nil {
 		hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig = &tls.Config{}
 	}
@@ -109,17 +172,12 @@ func TestNewJa3SpoofingOptionV2(t *testing.T) {
 	// require.NoError(t, err, "NewHTTPClient: errored unexpectedly.")
 	// doRequest(hClient, "https://api64.ipify.org?format=json", t)
 	doRequest(hClient, "https://tls.peet.ws/api/all", t)
-	doRequest(hClient, "https://api64.ipify.org?format=json", t)
+	// doRequest(hClient, "https://api64.ipify.org?format=json", t)
 }
 
 func TestBaseline(t *testing.T) {
 	hClient, err := gokhttp.NewHTTPClient(
 	// gokhttp_client.NewProxyOption("http://127.0.0.1:8888"),
-	// NewProxyOption("socks5://127.0.0.1:8889"),
-	// gokhttp_client.NewProxyOption("http://201.91.82.155:3128"),
-	// NewJa3SpoofingOptionV2(browser, &tls.Config{InsecureSkipVerify: true}),
-	// NewProxyOption("http://proxy:trWK3kn@192.154.251.136:8000"),
-	// NewProxyOption("socks5://GmBNx0nh3FzAEN2T:mobile;us;;;@proxy.soax.com:9096"),
 	)
 
 	require.NoError(t, err, "NewHTTPClient: errored unexpectedly.")
@@ -187,11 +245,6 @@ func TestHeaderOrder(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-
-	// err = NewProxyOption("socks5://127.0.0.1:8889").ExecuteV2(hClient)
-	// if err != nil {
-	// 	panic(err)
-	// }
 
 	req, err := oohttp.NewRequestWithContext(context.Background(), oohttp.MethodGet, "https://tls.peet.ws/api/clean", nil)
 	if err != nil {

@@ -7,15 +7,19 @@ import (
 	"net/url"
 )
 
+// ProxyOption sets a proxy on your HTTP transport, supports http, https, socks4 and socks5.
+//
+// Deprecated: This option was needed to handle oohttp Transports in the past, reflection now handles both in one function. Use github.com/BRUHItsABunny/gOkHttp/client instead.
 type ProxyOption struct {
 	ProxyURL string
 }
 
+// NewProxyOption Creates an ProxyOption that sets a proxy on your HTTP transport, supports http, https, socks4 and socks5.
+//
+// Deprecated: This option was needed to handle oohttp Transports in the past, reflection now handles both in one function. Use github.com/BRUHItsABunny/gOkHttp/client instead.
 func NewProxyOption(proxyURL string) *ProxyOption {
 	return &ProxyOption{ProxyURL: proxyURL}
 }
-
-// TODO: Allow for other types of proxies outside of stdlib too?
 
 func (o *ProxyOption) Execute(client *http.Client) error {
 	puo, err := url.Parse(o.ProxyURL)
