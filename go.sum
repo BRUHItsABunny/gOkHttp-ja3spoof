@@ -1,11 +1,11 @@
-github.com/BRUHItsABunny/gOkHttp v0.3.5 h1:KBfaSJPFJx/fo+kbypTrDCWOAxMYC+ZyxE6aU0U9jJ4=
-github.com/BRUHItsABunny/gOkHttp v0.3.5/go.mod h1:VqY7yakZZXz3nkVfez03xqr22kkasxm1/HG5Ms7AsCs=
+github.com/BRUHItsABunny/gOkHttp v0.3.6 h1:km+VxlLyLLxb6gBpjTSOs8y1lTBnoleE+WnRtPM8fxg=
+github.com/BRUHItsABunny/gOkHttp v0.3.6/go.mod h1:VqY7yakZZXz3nkVfez03xqr22kkasxm1/HG5Ms7AsCs=
 github.com/BRUHItsABunny/go-device-utils v0.0.5 h1:oJG9s7wte4adX+43coRhtMjmZbpteggrUFv8EYgzuTU=
 github.com/BRUHItsABunny/go-device-utils v0.0.5/go.mod h1:neXmdKHMQnmv2Whq6t77iPWk945WrP9Op2olIC3N6xk=
-github.com/BRUHItsABunny/oohttp v0.0.0-20241023001001-8f8c5d094119 h1:Mgf8bU1UGkU0qtOeNG5QFFm2+V+cy3us7JIWk4PIQvg=
-github.com/BRUHItsABunny/oohttp v0.0.0-20241023001001-8f8c5d094119/go.mod h1:6mjMEE8uA2wODu93EABmtmbjy0/YuORNNcRY9Dw2ncw=
-github.com/andybalholm/brotli v1.0.6 h1:Yf9fFpf49Zrxb9NlQaluyE92/+X7UVHlhMNJN2sxfOI=
-github.com/andybalholm/brotli v1.0.6/go.mod h1:fO7iG3H7G2nSZ7m0zPUDn85XEX2GTukHGRSepvi9Eig=
+github.com/BRUHItsABunny/oohttp v0.0.0-20241103215825-4b34daf53b0a h1:MzzRWI18TMW50T2wXtBJnzAGO6JkIGxJhLGgMC1Rv9k=
+github.com/BRUHItsABunny/oohttp v0.0.0-20241103215825-4b34daf53b0a/go.mod h1:437PcaW/17624XJ2mG+7ZcpYlXwhKPP6JZLnNTz3b8o=
+github.com/andybalholm/brotli v1.1.1 h1:PR2pgnyFznKEugtsUo0xLdDop5SKXd5Qf5ysW+7XdTA=
+github.com/andybalholm/brotli v1.1.1/go.mod h1:05ib4cKhjx3OQYUY22hTVd34Bc8upXjOLL2rKwwZBoA=
 github.com/cloudflare/circl v1.3.7 h1:qlCDlTPz2n9fu58M0Nh1J/JzcFpfgkFHHX3O35r5vcU=
 github.com/cloudflare/circl v1.3.7/go.mod h1:sRTcRWXGLrKw6yIGJ+l7amYJFfAXbZG0kBSc8r4zxgA=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
@@ -13,8 +13,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
 github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
-github.com/klauspost/compress v1.17.4 h1:Ej5ixsIri7BrIjBkRZLTo6ghwrEtHFk7ijlczPW4fZ4=
-github.com/klauspost/compress v1.17.4/go.mod h1:/dCuZOvVtNoHsyb+cuJD3itjs3NbnF6KH9zAO4BDxPM=
+github.com/klauspost/compress v1.17.11 h1:In6xLpyWOi1+C7tXUUWv2ot1QvBjxevKAaI6IXrJmUc=
+github.com/klauspost/compress v1.17.11/go.mod h1:pMDklpSncoRMuLFrf1W9Ss9KT+0rH90U12bZKk7uwG0=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
@@ -27,6 +27,8 @@ github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjR
 github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncjaFoBhdsK/akog=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
+github.com/xyproto/randomstring v1.0.5 h1:YtlWPoRdgMu3NZtP45drfy1GKoojuR7hmRcnhZqKjWU=
+github.com/xyproto/randomstring v1.0.5/go.mod h1:rgmS5DeNXLivK7YprL0pY+lTuhNQW3iGxZ18UQApw/E=
 golang.org/x/crypto v0.28.0 h1:GBDwsMXVQi34v5CCYUm2jkJvu4cbtru2U4TN2PSyQnw=
 golang.org/x/crypto v0.28.0/go.mod h1:rmgy+3RHxRZMyY0jjAJShp2zgEdOqj2AO7U0pYmeQ7U=
 golang.org/x/net v0.30.0 h1:AcW1SDZMkb8IpzCdQUaIq2sP4sZ4zw+55h6ynffypl4=
