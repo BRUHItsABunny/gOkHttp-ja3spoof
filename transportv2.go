@@ -201,6 +201,7 @@ func (o *Ja3SpoofingOptionV2) factoryFunc(conn net.Conn, config *tls.Config) ooh
 	}
 
 	if o.ClientHelloSpec != nil {
+		// TODO: We NEED deepcopy here.
 		if err := uTLSConn.ApplyPreset(o.ClientHelloSpec); err != nil {
 			panic(fmt.Errorf("Ja3SpoofingOptionV2.factoryFunc: dialTLSCtx: uTLSConn.ApplyPreset: %w", err))
 		}
