@@ -1,9 +1,9 @@
-github.com/BRUHItsABunny/gOkHttp v0.3.6 h1:km+VxlLyLLxb6gBpjTSOs8y1lTBnoleE+WnRtPM8fxg=
-github.com/BRUHItsABunny/gOkHttp v0.3.6/go.mod h1:VqY7yakZZXz3nkVfez03xqr22kkasxm1/HG5Ms7AsCs=
+github.com/BRUHItsABunny/gOkHttp v0.3.7 h1:aZj054AtOZbGPFGt1Yjlf8OBI7HvBFzRdvBP66XR08U=
+github.com/BRUHItsABunny/gOkHttp v0.3.7/go.mod h1:VqY7yakZZXz3nkVfez03xqr22kkasxm1/HG5Ms7AsCs=
 github.com/BRUHItsABunny/go-device-utils v0.0.5 h1:oJG9s7wte4adX+43coRhtMjmZbpteggrUFv8EYgzuTU=
 github.com/BRUHItsABunny/go-device-utils v0.0.5/go.mod h1:neXmdKHMQnmv2Whq6t77iPWk945WrP9Op2olIC3N6xk=
-github.com/BRUHItsABunny/oohttp v0.0.0-20241104073456-f2e7ae5134c6 h1:v3BrpEWx6RlRWooMxDaGKctsKkjgQ5QdwdnsI9gLQT0=
-github.com/BRUHItsABunny/oohttp v0.0.0-20241104073456-f2e7ae5134c6/go.mod h1:437PcaW/17624XJ2mG+7ZcpYlXwhKPP6JZLnNTz3b8o=
+github.com/BRUHItsABunny/oohttp v0.0.0-20241107075117-a9672b1dbb4b h1:KLehB5GUU8qIOYXrF3CP+Qo0cS+ZcDF5QEzHF8kecDw=
+github.com/BRUHItsABunny/oohttp v0.0.0-20241107075117-a9672b1dbb4b/go.mod h1:437PcaW/17624XJ2mG+7ZcpYlXwhKPP6JZLnNTz3b8o=
 github.com/andybalholm/brotli v1.1.1 h1:PR2pgnyFznKEugtsUo0xLdDop5SKXd5Qf5ysW+7XdTA=
 github.com/andybalholm/brotli v1.1.1/go.mod h1:05ib4cKhjx3OQYUY22hTVd34Bc8upXjOLL2rKwwZBoA=
 github.com/cloudflare/circl v1.3.7 h1:qlCDlTPz2n9fu58M0Nh1J/JzcFpfgkFHHX3O35r5vcU=
