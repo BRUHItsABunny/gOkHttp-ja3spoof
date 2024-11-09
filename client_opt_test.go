@@ -40,6 +40,23 @@ func TestParseSpec(t *testing.T) {
 	opt := NewJa3SpoofingOptionV2(&spec, nil)
 	hClient, err := gokhttp.NewHTTPClient(
 		opt,
+		&HTTP2ParametersOption{
+			HeaderTableSize:       65536,
+			EnablePush:            0,
+			MaxConcurrentStreams:  -1,
+			InitialWindowSize:     6291456,
+			MaxFrameSize:          -1,
+			MaxHeaderListSize:     262144,
+			WindowUpdateIncrement: 15663105,
+			HTTP2PriorityFrameSettings: &oohttp.HTTP2PriorityFrameSettings{
+				PriorityFrames: []*oohttp.HTTP2Priority{},
+				HeaderFrame: &oohttp.HTTP2Priority{
+					StreamDep: 0,
+					Exclusive: true,
+					Weight:    255,
+				},
+			},
+		},
 	)
 	require.NoError(t, err, "gokhttp.NewHTTPClient: errored unexpectedly.")
 
@@ -52,26 +69,26 @@ func TestParseSpec(t *testing.T) {
 	// }
 
 	// HTTP 2 stuff
-	hClient.Transport.(*oohttp.StdlibTransport).Transport.HasCustomInitialSettings = true
-	hClient.Transport.(*oohttp.StdlibTransport).Transport.HTTP2SettingsFrameParameters = []int64{
-		65536,   // HeaderTableSize
-		0,       // EnablePush
-		-1,      // MaxConcurrentStreams
-		6291456, // InitialWindowSize
-		-1,      // MaxFrameSize
-		262144,  // MaxHeaderListSize
-	}
+	// hClient.Transport.(*oohttp.StdlibTransport).Transport.HasCustomInitialSettings = true
+	// hClient.Transport.(*oohttp.StdlibTransport).Transport.HTTP2SettingsFrameParameters = []int64{
+	// 	65536,   // HeaderTableSize
+	// 	0,       // EnablePush
+	// 	-1,      // MaxConcurrentStreams
+	// 	6291456, // InitialWindowSize
+	// 	-1,      // MaxFrameSize
+	// 	262144,  // MaxHeaderListSize
+	// }
 
-	hClient.Transport.(*oohttp.StdlibTransport).Transport.HasCustomWindowUpdate = true
-	hClient.Transport.(*oohttp.StdlibTransport).Transport.WindowUpdateIncrement = 15663105
-	hClient.Transport.(*oohttp.StdlibTransport).Transport.HTTP2PriorityFrameSettings = &oohttp.HTTP2PriorityFrameSettings{
-		PriorityFrames: []*oohttp.HTTP2Priority{},
-		HeaderFrame: &oohttp.HTTP2Priority{
-			StreamDep: 0,
-			Exclusive: true,
-			Weight:    255,
-		},
-	}
+	// hClient.Transport.(*oohttp.StdlibTransport).Transport.HasCustomWindowUpdate = true
+	// hClient.Transport.(*oohttp.StdlibTransport).Transport.WindowUpdateIncrement = 15663105
+	// hClient.Transport.(*oohttp.StdlibTransport).Transport.HTTP2PriorityFrameSettings = &oohttp.HTTP2PriorityFrameSettings{
+	// 	PriorityFrames: []*oohttp.HTTP2Priority{},
+	// 	HeaderFrame: &oohttp.HTTP2Priority{
+	// 		StreamDep: 0,
+	// 		Exclusive: true,
+	// 		Weight:    255,
+	// 	},
+	// }
 	doRequest(hClient, "https://tls.peet.ws/api/all", t)
 }
 
@@ -92,6 +109,23 @@ func TestNewJa3SpoofingOptionV2(t *testing.T) {
 	// tlsLogFile, _ := os.OpenFile(fmt.Sprintf("gokhttp_keys_%d.log", time.Now().Unix()), os.O_CREATE|os.O_RDWR, 0666)
 	hClient, err := gokhttp.NewHTTPClient(
 		opt,
+		&HTTP2ParametersOption{
+			HeaderTableSize:       65536,
+			EnablePush:            0,
+			MaxConcurrentStreams:  -1,
+			InitialWindowSize:     6291456,
+			MaxFrameSize:          -1,
+			MaxHeaderListSize:     262144,
+			WindowUpdateIncrement: 15663105,
+			HTTP2PriorityFrameSettings: &oohttp.HTTP2PriorityFrameSettings{
+				PriorityFrames: []*oohttp.HTTP2Priority{},
+				HeaderFrame: &oohttp.HTTP2Priority{
+					StreamDep: 0,
+					Exclusive: true,
+					Weight:    255,
+				},
+			},
+		},
 		// gokhttp_client.NewProxyOption("http://127.0.0.1:8888"),
 		// gokhttp_client.NewRawTLSConfigOption(&tls.Config{KeyLogWriter: tlsLogFile}),
 		// NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_Auto),
@@ -102,76 +136,9 @@ func TestNewJa3SpoofingOptionV2(t *testing.T) {
 		hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig = &tls.Config{}
 	}
 	hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig.InsecureSkipVerify = true
-	// hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig.NextProtos = []string{
-	// 	"http/1.1",
-	// }
-
-	// HTTP 2 stuff
-	hClient.Transport.(*oohttp.StdlibTransport).Transport.HasCustomInitialSettings = true
-	hClient.Transport.(*oohttp.StdlibTransport).Transport.HTTP2SettingsFrameParameters = []int64{
-		65536,   // HeaderTableSize
-		0,       // EnablePush
-		-1,      // MaxConcurrentStreams
-		6291456, // InitialWindowSize
-		-1,      // MaxFrameSize
-		262144,  // MaxHeaderListSize
-	}
-
-	hClient.Transport.(*oohttp.StdlibTransport).Transport.HasCustomWindowUpdate = true
-	hClient.Transport.(*oohttp.StdlibTransport).Transport.WindowUpdateIncrement = 15663105
-	hClient.Transport.(*oohttp.StdlibTransport).Transport.HTTP2PriorityFrameSettings = &oohttp.HTTP2PriorityFrameSettings{
-		PriorityFrames: []*oohttp.HTTP2Priority{
-			// nil,
-			// nil, // 1
-			// nil, // 2
-			// { // 3
-			// 	StreamDep: 0,
-			// 	Exclusive: false,
-			// 	Weight:    200,
-			// },
-			// nil, // 4
-			// { // 5
-			// 	StreamDep: 0,
-			// 	Exclusive: false,
-			// 	Weight:    100,
-			// },
-			// nil, // 6
-			// { // 7
-			// 	StreamDep: 0,
-			// 	Exclusive: false,
-			// 	Weight:    0,
-			// },
-			// nil, // 8
-			// { // 9
-			// 	StreamDep: 7,
-			// 	Exclusive: false,
-			// 	Weight:    200,
-			// },
-			// nil, // 10
-			// { // 11
-			// 	StreamDep: 3,
-			// 	Exclusive: false,
-			// 	Weight:    0,
-			// },
-			// nil, // 12
-			// { // 13
-			// 	StreamDep: 0,
-			// 	Exclusive: false,
-			// 	Weight:    240,
-			// },
-		},
-		HeaderFrame: &oohttp.HTTP2Priority{
-			StreamDep: 0,
-			Exclusive: true,
-			Weight:    255,
-		},
-	}
-
-	// tr2 := hClient.Transport.(*oohttp.StdlibTransport).Transport.(*oohttp.Transport)
-	// require.NoError(t, err, "NewHTTPClient: errored unexpectedly.")
 	// doRequest(hClient, "https://api64.ipify.org?format=json", t)
-	// doRequest(hClient, "https://tls.peet.ws/api/all", t)
-	doRequest(hClient, "https://google.com/", t)
+	doRequest(hClient, "https://tls.peet.ws/api/all", t)
+	// doRequest(hClient, "https://google.com/", t)
 	// doRequest(hClient, "https://api64.ipify.org?format=json", t)
 }
 
