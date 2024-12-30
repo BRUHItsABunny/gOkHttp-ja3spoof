@@ -1,20 +1,24 @@
 module github.com/BRUHItsABunny/gOkHttp-ja3spoof
 
-go 1.21
+go 1.22.0
+
+toolchain go1.22.7
 
 replace github.com/ooni/oohttp v0.7.3 => github.com/BRUHItsABunny/oohttp v0.0.0-20241107075117-a9672b1dbb4b
+
+replace github.com/refraction-networking/utls v1.6.7 => github.com/BRUHItsABunny/utls v1.6.7-chrome-131-support
 
 require (
 	github.com/BRUHItsABunny/gOkHttp v0.3.7
 	github.com/BRUHItsABunny/go-device-utils v0.0.5
 	github.com/ooni/oohttp v0.7.3
 	github.com/refraction-networking/utls v1.6.7
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 )
 
 require (
 	github.com/andybalholm/brotli v1.1.1 // indirect
-	github.com/cloudflare/circl v1.3.7 // indirect
+	github.com/cloudflare/circl v1.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
