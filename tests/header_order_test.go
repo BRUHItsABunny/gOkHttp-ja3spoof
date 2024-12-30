@@ -151,6 +151,7 @@ func TestHeaderFingerprintConsistency(t *testing.T) {
 			t.Error(err)
 			continue
 		}
+		// TODO: This line is needed to pass HTTP 1 tests, but  that's really indicative of a bug because HTTP 2 tests don't need it
 		hClient.Transport.(*oohttp.StdlibTransport).Transport.DisableCompression = true
 
 		req, err := gokhttp_requests.MakeGETRequest(
