@@ -4,6 +4,8 @@ github.com/BRUHItsABunny/go-device-utils v0.0.5 h1:oJG9s7wte4adX+43coRhtMjmZbpte
 github.com/BRUHItsABunny/go-device-utils v0.0.5/go.mod h1:neXmdKHMQnmv2Whq6t77iPWk945WrP9Op2olIC3N6xk=
 github.com/BRUHItsABunny/oohttp v0.8.0-useragent-fix h1:5huIorYzwETdJDLCHfLhRdurlLrF4weB2aydF08E+eU=
 github.com/BRUHItsABunny/oohttp v0.8.0-useragent-fix/go.mod h1:1IndFgTF/Me9uc1kvYvYdH3mqcsnzwJnt1tV3dMojAM=
+github.com/BRUHItsABunny/utls v1.6.7-chrome-133-support h1:CiIahd8CcDhWw/u3u+ncXby3/Dywqxkzr3yQhBFq8L8=
+github.com/BRUHItsABunny/utls v1.6.7-chrome-133-support/go.mod h1:VkPdJKGWslR0l6V/+85Rc0IHCbH/hfE+Cnr8aq8+sXQ=
 github.com/andybalholm/brotli v1.1.1 h1:PR2pgnyFznKEugtsUo0xLdDop5SKXd5Qf5ysW+7XdTA=
 github.com/andybalholm/brotli v1.1.1/go.mod h1:05ib4cKhjx3OQYUY22hTVd34Bc8upXjOLL2rKwwZBoA=
 github.com/cloudflare/circl v1.5.0 h1:hxIWksrX6XN5a1L2TI/h53AGPhNHoUBo+TD1ms9+pys=
@@ -21,8 +23,6 @@ github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/refraction-networking/utls v1.6.8-0.20250314010516-e430876b1d82 h1:DUv6QtmykiMO8YO5zTcfIeiyu37EWcyyyK4LypZXlg4=
-github.com/refraction-networking/utls v1.6.8-0.20250314010516-e430876b1d82/go.mod h1:VkPdJKGWslR0l6V/+85Rc0IHCbH/hfE+Cnr8aq8+sXQ=
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
 github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncjaFoBhdsK/akog=
 github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=

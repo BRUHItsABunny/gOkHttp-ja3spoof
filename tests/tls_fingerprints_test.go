@@ -24,6 +24,11 @@ func TestTLSFingerprintConsistency(t *testing.T) {
 	testCases := []testCase{
 		{
 			label:    "latest chrome",
+			in:       gokhttp_ja3spoof.NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_133),
+			expected: "GREASE-772-771|2-1.1|GREASE-4588-29-23-24|1027-2052-1025-1283-2053-1281-2054-1537|1|2|GREASE-4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53|0-10-11-13-16-17613-18-23-27-35-43-45-5-51-65037-65281-GREASE-GREASE",
+		},
+		{
+			label:    "chrome 131+",
 			in:       gokhttp_ja3spoof.NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_131),
 			expected: "GREASE-772-771|2-1.1|GREASE-4588-29-23-24|1027-2052-1025-1283-2053-1281-2054-1537|1|2|GREASE-4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53|0-10-11-13-16-17513-18-23-27-35-43-45-5-51-65037-65281-GREASE-GREASE",
 		},

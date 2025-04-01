@@ -6,6 +6,8 @@ toolchain go1.24.1
 
 replace github.com/ooni/oohttp v0.8.0 => github.com/BRUHItsABunny/oohttp v0.8.0-useragent-fix
 
+replace github.com/refraction-networking/utls v1.6.8-0.20250314010516-e430876b1d82 => github.com/BRUHItsABunny/utls v1.6.7-chrome-133-support
+
 require (
 	github.com/BRUHItsABunny/gOkHttp v0.3.7
 	github.com/BRUHItsABunny/go-device-utils v0.0.5
