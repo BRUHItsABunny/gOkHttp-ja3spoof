@@ -3,6 +3,10 @@ package tests
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
+	"testing"
+
 	gokhttp "github.com/BRUHItsABunny/gOkHttp"
 	gokhttp_ja3spoof "github.com/BRUHItsABunny/gOkHttp-ja3spoof"
 	gokhttp_requests "github.com/BRUHItsABunny/gOkHttp/requests"
@@ -10,10 +14,13 @@ import (
 	oohttp "github.com/ooni/oohttp"
 	utls "github.com/refraction-networking/utls"
 	"github.com/stretchr/testify/assert"
-	"net/http"
-	"strings"
-	"testing"
 )
+
+func newHeaderFPCOption() *gokhttp_ja3spoof.Ja3SpoofingOptionV2 {
+	result := gokhttp_ja3spoof.NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_131)
+	result.TrackResponseHeaderOrder = true
+	return result
+}
 
 func TestHeaderFingerprintConsistency(t *testing.T) {
 	type testCase struct {
@@ -26,7 +33,7 @@ func TestHeaderFingerprintConsistency(t *testing.T) {
 	testCases := []testCase{
 		{
 			label: "chrome http2",
-			in:    gokhttp_ja3spoof.NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_131),
+			in:    newHeaderFPCOption(),
 			inHeaders: http.Header{
 				"sec-ch-ua":                 {"\"Brave\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\""},
 				"sec-ch-ua-mobile":          {"?0"},
@@ -89,7 +96,7 @@ func TestHeaderFingerprintConsistency(t *testing.T) {
 		},
 		{
 			label: "chrome http1",
-			in:    gokhttp_ja3spoof.NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_131),
+			in:    newHeaderFPCOption(),
 			inHeaders: http.Header{
 				"Sec-CH-UA":                 []string{"\"Brave\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\""},
 				"Sec-CH-UA-Mobile":          []string{"?0"},
@@ -187,5 +194,6 @@ func TestHeaderFingerprintConsistency(t *testing.T) {
 			}
 		}
 		assert.EqualValues(t, testCaseObj.expected, got, "Headers should equal")
+		fmt.Println(resp.Header)
 	}
 }

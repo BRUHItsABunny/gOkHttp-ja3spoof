@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/BRUHItsABunny/gOkHttp-ja3spoof/compat/tls_compat"
 	"math/rand"
 	"net"
 	"net/http"
@@ -14,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/BRUHItsABunny/gOkHttp-ja3spoof/compat/tls_compat"
 
 	device_utils "github.com/BRUHItsABunny/go-device-utils"
 	oohttp "github.com/ooni/oohttp"
@@ -60,13 +61,14 @@ func (c *uconn) HandshakeContext(ctx context.Context) error {
 }
 
 type Ja3SpoofingOptionV2 struct {
-	TLSConfig       *tls.Config
-	ClientHelloSpec *utls.ClientHelloSpec
-	Browser         *device_utils.Browser
-	ClientHelloID   *utls.ClientHelloID
-	ExtensionMap    func() map[int32]utls.TLSExtension
-	IsHTTP1         bool
-	ECHConfig       *utls.GREASEEncryptedClientHelloExtension
+	TLSConfig                *tls.Config
+	ClientHelloSpec          *utls.ClientHelloSpec
+	Browser                  *device_utils.Browser
+	ClientHelloID            *utls.ClientHelloID
+	ExtensionMap             func() map[int32]utls.TLSExtension
+	IsHTTP1                  bool
+	ECHConfig                *utls.GREASEEncryptedClientHelloExtension
+	TrackResponseHeaderOrder bool
 }
 
 func DefaultExtensionMapV2() map[int32]utls.TLSExtension {
@@ -215,13 +217,14 @@ func (o *Ja3SpoofingOptionV2) Execute(client *http.Client) error {
 		Transport: &oohttp.Transport{
 			// DialContext:           DefaultNetDialer.DialContext,
 			// DialTLSContext:        tlsDialer,
-			ForceAttemptHTTP2:     true,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-			TLSClientFactory:      o.factoryFunc,
-			TLSClientConfig:       o.TLSConfig,
+			ForceAttemptHTTP2:        true,
+			MaxIdleConns:             100,
+			IdleConnTimeout:          90 * time.Second,
+			TLSHandshakeTimeout:      10 * time.Second,
+			ExpectContinueTimeout:    1 * time.Second,
+			TLSClientFactory:         o.factoryFunc,
+			TLSClientConfig:          o.TLSConfig,
+			TrackResponseHeaderOrder: o.TrackResponseHeaderOrder,
 		},
 	}
 
@@ -232,12 +235,13 @@ func (o *Ja3SpoofingOptionV2) ExecuteV2(client *oohttp.Client) error {
 	client.Transport = &oohttp.Transport{
 		// DialContext:           DefaultNetDialer.DialContext,
 		// DialTLSContext:        tlsDialer,
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		TLSClientFactory:      o.factoryFunc,
+		ForceAttemptHTTP2:        true,
+		MaxIdleConns:             100,
+		IdleConnTimeout:          90 * time.Second,
+		TLSHandshakeTimeout:      10 * time.Second,
+		ExpectContinueTimeout:    1 * time.Second,
+		TLSClientFactory:         o.factoryFunc,
+		TrackResponseHeaderOrder: o.TrackResponseHeaderOrder,
 	}
 
 	return nil
