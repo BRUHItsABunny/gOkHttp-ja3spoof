@@ -1,8 +1,9 @@
 package gokhttp_ja3spoof
 
 import (
-	oohttp "github.com/ooni/oohttp"
 	"net/http"
+
+	oohttp "github.com/BRUHItsABunny/oohttp"
 )
 
 type HTTP2ParametersOption struct {

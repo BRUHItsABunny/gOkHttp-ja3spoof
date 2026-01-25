@@ -3,15 +3,16 @@ package tests
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"testing"
+
 	gokhttp "github.com/BRUHItsABunny/gOkHttp"
 	gokhttp_ja3spoof "github.com/BRUHItsABunny/gOkHttp-ja3spoof"
 	gokhttp_requests "github.com/BRUHItsABunny/gOkHttp/requests"
 	gokhttp_responses "github.com/BRUHItsABunny/gOkHttp/responses"
-	oohttp "github.com/ooni/oohttp"
+	oohttp "github.com/BRUHItsABunny/oohttp"
 	utls "github.com/refraction-networking/utls"
 	"github.com/stretchr/testify/assert"
-	"net/http"
-	"testing"
 )
 
 func TestHTTP2FingerprintConsistency(t *testing.T) {

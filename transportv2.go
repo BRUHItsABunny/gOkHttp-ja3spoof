@@ -17,7 +17,7 @@ import (
 	"github.com/BRUHItsABunny/gOkHttp-ja3spoof/compat/tls_compat"
 
 	device_utils "github.com/BRUHItsABunny/go-device-utils"
-	oohttp "github.com/ooni/oohttp"
+	oohttp "github.com/BRUHItsABunny/oohttp"
 	utls "github.com/refraction-networking/utls"
 	"github.com/refraction-networking/utls/dicttls"
 )

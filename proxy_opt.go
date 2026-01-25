@@ -2,9 +2,10 @@ package gokhttp_ja3spoof
 
 import (
 	"fmt"
-	oohttp "github.com/ooni/oohttp"
 	"net/http"
 	"net/url"
+
+	oohttp "github.com/BRUHItsABunny/oohttp"
 )
 
 // ProxyOption sets a proxy on your HTTP transport, supports http, https, socks4 and socks5.

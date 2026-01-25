@@ -2,13 +2,12 @@ module github.com/BRUHItsABunny/gOkHttp-ja3spoof
 
 go 1.25
 
-replace github.com/ooni/oohttp v0.8.1 => github.com/BRUHItsABunny/oohttp v0.8.3
-
 replace github.com/refraction-networking/utls => github.com/BRUHItsABunny/utls v1.8.2-ios-support
 
 require (
 	github.com/BRUHItsABunny/gOkHttp v0.3.7
 	github.com/BRUHItsABunny/go-device-utils v0.0.5
+	github.com/BRUHItsABunny/oohttp v0.9.1
 	github.com/ooni/oohttp v0.8.1
 	github.com/refraction-networking/utls v1.8.2
 	github.com/stretchr/testify v1.10.0
