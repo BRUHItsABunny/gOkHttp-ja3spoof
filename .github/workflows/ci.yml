@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: build and hermetic tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: gofmt
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::These files need gofmt:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go mod tidy is up to date
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+
+      - name: build
+        run: go build ./...
+
+      - name: vet
+        run: go vet ./...
+
+      # These spin up their own CONNECT proxy and TLS backend on localhost, so they
+      # are fully deterministic and must never be allowed to fail.
+      - name: hermetic tests
+        run: go test -v -race -count=1 -run 'TestProxy' ./tests/
+
+  fingerprints:
+    name: fingerprint tests (tls.peet.ws)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # Diagnostic only: makes an external outage obvious in the log instead of
+      # looking like a fingerprint regression.
+      - name: check tls.peet.ws reachability
+        run: |
+          if ! curl -sSf -o /dev/null --max-time 30 https://tls.peet.ws/api/clean; then
+            echo "::warning::tls.peet.ws is not reachable from this runner; the failures below are likely external."
+          fi
+
+      # The whole suite, including the assertions against the fingerprint tls.peet.ws
+      # reports back. Retried because the dependency is a third-party service.
+      - name: fingerprint tests
+        run: |
+          for attempt in 1 2 3; do
+            echo "::group::attempt $attempt"
+            if go test -v -count=1 ./...; then
+              echo "::endgroup::"
+              exit 0
+            fi
+            echo "::endgroup::"
+            echo "::warning::attempt $attempt failed"
+            [ "$attempt" -lt 3 ] && sleep 20
+          done
+          echo "::error::fingerprint tests failed after 3 attempts"
+          exit 1

@@ -5,17 +5,18 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	gokhttp "github.com/BRUHItsABunny/gOkHttp"
-	gokhttp_requests "github.com/BRUHItsABunny/gOkHttp/requests"
-	gokhttp_responses "github.com/BRUHItsABunny/gOkHttp/responses"
-	device_utils "github.com/BRUHItsABunny/go-device-utils"
-	oohttp "github.com/ooni/oohttp"
-	utls "github.com/refraction-networking/utls"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"os"
 	"testing"
 	"time"
+
+	gokhttp "github.com/BRUHItsABunny/gOkHttp"
+	gokhttp_requests "github.com/BRUHItsABunny/gOkHttp/requests"
+	gokhttp_responses "github.com/BRUHItsABunny/gOkHttp/responses"
+	device_utils "github.com/BRUHItsABunny/go-device-utils"
+	oohttp "github.com/BRUHItsABunny/oohttp"
+	utls "github.com/refraction-networking/utls"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseSpec(t *testing.T) {
