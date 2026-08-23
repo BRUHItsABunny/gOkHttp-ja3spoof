@@ -69,9 +69,23 @@ jobs:
             echo "::warning::tls.peet.ws is not reachable from this runner; the failures below are likely external."
           fi
 
+      # TestPCAPNGOptionOnOOHTTPStack proves the pcapng capture is decryptable by dissecting
+      # it with tshark. Without tshark that assertion degrades to a no-op, so it is installed
+      # here and REQUIRE_TSHARK below turns a missing binary into a failure instead.
+      # Only reading capture files, so dumpcap does not need to be setuid.
+      - name: install tshark
+        run: |
+          echo "wireshark-common wireshark-common/install-setuid boolean false" | sudo debconf-set-selections
+          sudo DEBIAN_FRONTEND=noninteractive apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tshark
+          tshark --version | head -n1
+
       # The whole suite, including the assertions against the fingerprint tls.peet.ws
-      # reports back. Retried because the dependency is a third-party service.
+      # reports back, and the pcapng capture/decryption test. Retried because the
+      # dependency is a third-party service.
       - name: fingerprint tests
+        env:
+          REQUIRE_TSHARK: "1"
         run: |
           for attempt in 1 2 3; do
             echo "::group::attempt $attempt"
