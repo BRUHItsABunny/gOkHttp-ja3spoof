@@ -5,17 +5,17 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	gokhttp "github.com/BRUHItsABunny/gOkHttp"
-	gokhttp_requests "github.com/BRUHItsABunny/gOkHttp/requests"
-	gokhttp_responses "github.com/BRUHItsABunny/gOkHttp/responses"
-	device_utils "github.com/BRUHItsABunny/go-device-utils"
-	oohttp "github.com/ooni/oohttp"
-	utls "github.com/refraction-networking/utls"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"os"
 	"testing"
 	"time"
+
+	gokhttp "github.com/BRUHItsABunny/gOkHttp"
+	gokhttp_requests "github.com/BRUHItsABunny/gOkHttp/requests"
+	gokhttp_responses "github.com/BRUHItsABunny/gOkHttp/responses"
+	device_utils "github.com/BRUHItsABunny/go-device-utils"
+	oohttp "github.com/BRUHItsABunny/oohttp"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseSpec(t *testing.T) {
@@ -92,66 +92,6 @@ func TestParseSpec(t *testing.T) {
 	doRequest(hClient, "https://tls.peet.ws/api/all", t)
 }
 
-func TestNewJa3SpoofingOptionV2(t *testing.T) {
-	// browser := device_utils.AvailableBrowsers["brave"]["1.50.114"]
-	// fmt.Println(spew.Sdump(browser))
-
-	// spec, err := CreateSpecWithJA3Str("771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,13-43-23-11-17513-10-5-0-51-65281-16-18-65037-27-35-45,29-23-24,0")
-	// spec, err := CreateSpecWithJA3Str("771,49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,0-5-10-11-13-50-16-17-23-43-65281,29-23-24-25-30,0")
-	// spec, err := CreateSpecWithJA3Str("771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,35-43-65037-17513-13-65281-23-51-45-0-27-10-16-18-11-5,25497-29-23-24,0")
-	// require.NoError(t, err, "CreateSpecWithJA3Str: errored unexpectedly.")
-	// fmt.Println(spew.Sdump(spec))
-	// require.NoError(t, err, "log file: errored unexpectedly.")
-	// opt := NewJa3SpoofingOptionV2(&spec, nil)
-	opt := NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_120_PQ)
-	// opt.IsHTTP1 = true // True will force HTTP 1.1
-
-	// tlsLogFile, _ := os.OpenFile(fmt.Sprintf("gokhttp_keys_%d.log", time.Now().Unix()), os.O_CREATE|os.O_RDWR, 0666)
-	hClient, err := gokhttp.NewHTTPClient(
-		opt,
-		&HTTP2ParametersOption{
-			HeaderTableSize:       65536,
-			EnablePush:            0,
-			MaxConcurrentStreams:  -1,
-			InitialWindowSize:     6291456,
-			MaxFrameSize:          -1,
-			MaxHeaderListSize:     262144,
-			WindowUpdateIncrement: 15663105,
-			HTTP2PriorityFrameSettings: &oohttp.HTTP2PriorityFrameSettings{
-				PriorityFrames: []*oohttp.HTTP2Priority{},
-				HeaderFrame: &oohttp.HTTP2Priority{
-					StreamDep: 0,
-					Exclusive: true,
-					Weight:    255,
-				},
-			},
-		},
-		// gokhttp_client.NewProxyOption("http://127.0.0.1:8888"),
-		// gokhttp_client.NewRawTLSConfigOption(&tls.Config{KeyLogWriter: tlsLogFile}),
-		// NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_Auto),
-	)
-	require.NoError(t, err, "gokhttp.NewHTTPClient: errored unexpectedly.")
-
-	if hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig == nil {
-		hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig = &tls.Config{}
-	}
-	hClient.Transport.(*oohttp.StdlibTransport).Transport.TLSClientConfig.InsecureSkipVerify = true
-	// doRequest(hClient, "https://api64.ipify.org?format=json", t)
-	doRequest(hClient, "https://tls.peet.ws/api/all", t)
-	// doRequest(hClient, "https://google.com/", t)
-	// doRequest(hClient, "https://api64.ipify.org?format=json", t)
-}
-
-func TestBaseline(t *testing.T) {
-	hClient, err := gokhttp.NewHTTPClient(
-	// gokhttp_client.NewProxyOption("http://127.0.0.1:8888"),
-	)
-
-	require.NoError(t, err, "NewHTTPClient: errored unexpectedly.")
-	// doRequest(hClient, "https://api64.ipify.org?format=json", t)
-	doRequest(hClient, "https://tls.peet.ws/api/all", t)
-}
-
 func doRequest(hClient *http.Client, urlStr string, t *testing.T) {
 	fmt.Println(fmt.Sprintf("%s: %s", time.Now().String(), "start"))
 	req, err := gokhttp_requests.MakeGETRequest(context.Background(), urlStr)
@@ -205,32 +145,4 @@ func doRequest(hClient *http.Client, urlStr string, t *testing.T) {
 	require.NoError(t, err, "gokhttp_responses.ResponseText: errored unexpectedly.")
 	fmt.Println(fmt.Sprintf("%s\n\n%s", time.Now().String(), result))
 	fmt.Println("content-encoding: ", resp.Header.Get("Content-Encoding"))
-}
-
-func TestHeaderOrder(t *testing.T) {
-
-	hClient := &oohttp.Client{}
-	err := NewJa3SpoofingOptionV2(nil, &utls.HelloChrome_Auto).ExecuteV2(hClient)
-	if err != nil {
-		panic(err)
-	}
-
-	req, err := oohttp.NewRequestWithContext(context.Background(), oohttp.MethodGet, "https://tls.peet.ws/api/clean", nil)
-	if err != nil {
-		panic(err)
-	}
-	req.Header = oohttp.Header{
-		oohttp.PHeaderOrderKey: {
-			":method",
-			":path",
-			":authority",
-			":scheme",
-		},
-	}
-
-	_, err = hClient.Do(req)
-	if err != nil {
-		panic(err)
-	}
-
 }

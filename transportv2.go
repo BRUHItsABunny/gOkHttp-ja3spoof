@@ -127,6 +127,12 @@ func DefaultExtensionMapV2() map[int32]utls.TLSExtension {
 				"h2",
 			},
 		},
+		// ALPS moved to codepoint 17613 in Chrome 124+, see chromestatus.com/feature/5149147365900288
+		17613: &utls.ApplicationSettingsExtensionNew{
+			SupportedProtocols: []string{
+				"h2",
+			},
+		},
 		65281: &utls.RenegotiationInfoExtension{
 			Renegotiation: utls.RenegotiateOnceAsClient,
 		},
@@ -703,6 +709,18 @@ func createExtension(extensionId uint16, options ...extensionOption) (utls.TLSEx
 			extV.SupportedProtocols = []string{"h2"}
 		}
 		return extV, true
+	case 17613:
+		if option.ext != nil {
+			extV := *(option.ext.(*utls.ApplicationSettingsExtensionNew))
+			return &extV, true
+		}
+		extV := new(utls.ApplicationSettingsExtensionNew)
+		if option.data != nil {
+			extV.Write(option.data)
+		} else {
+			extV.SupportedProtocols = []string{"h2"}
+		}
+		return extV, true
 	case 30031:
 		if option.ext != nil {
 			extV := *(option.ext.(*utls.FakeChannelIDExtension))
@@ -728,8 +746,16 @@ func createExtension(extensionId uint16, options ...extensionOption) (utls.TLSEx
 	case 65037:
 		// https://github.com/Noooste/azuretls-client/blob/3012ac665ef7984f06feb375daa12e00be044567/ja3.go#L419C3-L436C6
 		if option.ext != nil {
-			extV := *(option.ext.(*utls.GREASEEncryptedClientHelloExtension))
-			return &extV, true
+			src := option.ext.(*utls.GREASEEncryptedClientHelloExtension)
+			// Never copy the struct itself: it embeds a sync.Once and utls requires
+			// fresh randomness (config_id, payload) per ClientHello.
+			extV := &utls.GREASEEncryptedClientHelloExtension{
+				CandidateCipherSuites: append([]utls.HPKESymmetricCipherSuite(nil), src.CandidateCipherSuites...),
+				CandidateConfigIds:    append([]uint8(nil), src.CandidateConfigIds...),
+				EncapsulatedKey:       append([]byte(nil), src.EncapsulatedKey...),
+				CandidatePayloadLens:  append([]uint16(nil), src.CandidatePayloadLens...),
+			}
+			return extV, true
 		}
 		extV := &utls.GREASEEncryptedClientHelloExtension{
 			CandidateCipherSuites: []utls.HPKESymmetricCipherSuite{
@@ -854,7 +880,228 @@ func CreateSpecWithJA3Str(ja3Str string) (clientHelloSpec utls.ClientHelloSpec, 
 	return
 }
 
+// CreateSpecWithTLSFingerprint builds a ClientHelloSpec from a parsed browser TLS
+// fingerprint, using DefaultTLSGREASEConfig. Unlike BrowserToClientHelloSpec it also honours
+// fingerprint.ExtensionData, so the contents of supported_versions, key_share, ALPN, ECH and
+// friends come from the fingerprint rather than the defaults in DefaultExtensionMapV2.
+//
+// FromPEET drops every GREASE value it sees, so a fingerprint on its own cannot say where the
+// browser put them. Use ExtractGREASEFromPEET with CreateSpecWithTLSFingerprintAndGREASE to
+// keep the real positions.
 func CreateSpecWithTLSFingerprint(fingerprint *device_utils.Browser_TLSFingerprint) (clientHelloSpec utls.ClientHelloSpec, err error) {
+	return CreateSpecWithTLSFingerprintAndGREASE(fingerprint, DefaultTLSGREASEConfig())
+}
 
+// CreateSpecWithTLSFingerprintAndGREASE is CreateSpecWithTLSFingerprint with explicit control
+// over where GREASE values are placed. A nil grease means no GREASE at all.
+func CreateSpecWithTLSFingerprintAndGREASE(fingerprint *device_utils.Browser_TLSFingerprint, grease *TLSGREASEConfig) (clientHelloSpec utls.ClientHelloSpec, err error) {
+	if fingerprint == nil {
+		return clientHelloSpec, errors.New("fingerprint is nil")
+	}
+	if len(fingerprint.CipherSuites) == 0 {
+		return clientHelloSpec, errors.New("fingerprint has no cipher suites")
+	}
+	if grease == nil {
+		grease = &TLSGREASEConfig{}
+	}
+
+	cipherSuites := make([]uint16, 0, len(fingerprint.CipherSuites)+1)
+	if grease.CipherSuites {
+		cipherSuites = append(cipherSuites, utls.GREASE_PLACEHOLDER)
+	}
+	for _, suite := range fingerprint.CipherSuites {
+		cipherSuites = append(cipherSuites, uint16(suite))
+	}
+
+	extensionMap := DefaultExtensionMapV2()
+
+	curves := make([]utls.CurveID, 0, len(fingerprint.EllipticCurves)+1)
+	if grease.SupportedGroups {
+		curves = append(curves, utls.CurveID(utls.GREASE_PLACEHOLDER))
+	}
+	for _, curve := range fingerprint.EllipticCurves {
+		curves = append(curves, utls.CurveID(curve))
+	}
+	extensionMap[10] = &utls.SupportedCurvesExtension{Curves: curves}
+
+	pointFmts := make([]byte, len(fingerprint.EllipticCurvePointFormats))
+	for i, pointFmt := range fingerprint.EllipticCurvePointFormats {
+		pointFmts[i] = byte(pointFmt)
+	}
+	extensionMap[11] = &utls.SupportedPointsExtension{SupportedPoints: pointFmts}
+
+	applyFingerprintExtensionData(extensionMap, fingerprint.ExtensionData, grease)
+
+	extensions, err := fingerprintExtensions(fingerprint.Extensions, extensionMap, grease)
+	if err != nil {
+		return clientHelloSpec, err
+	}
+
+	clientHelloSpec.TLSVersMax, clientHelloSpec.TLSVersMin = fingerprintVersionRange(fingerprint)
+	clientHelloSpec.CipherSuites = cipherSuites
+	clientHelloSpec.CompressionMethods = []byte{0}
+	clientHelloSpec.GetSessionID = sha256.Sum256
+	clientHelloSpec.Extensions = extensions
+	return clientHelloSpec, nil
+}
+
+// fingerprintVersionRange derives the version window from the supported_versions extension
+// data, falling back to the record version the fingerprint was observed with.
+func fingerprintVersionRange(fingerprint *device_utils.Browser_TLSFingerprint) (tlsVersMax, tlsVersMin uint16) {
+	for _, data := range fingerprint.ExtensionData {
+		supported := data.GetSupportedVersions()
+		if supported == nil {
+			continue
+		}
+		for _, version := range supported.GetVersions() {
+			ver := uint16(version)
+			if ver == 0 {
+				continue
+			}
+			if tlsVersMax == 0 || ver > tlsVersMax {
+				tlsVersMax = ver
+			}
+			if tlsVersMin == 0 || ver < tlsVersMin {
+				tlsVersMin = ver
+			}
+		}
+	}
+	if tlsVersMax == 0 {
+		ver := uint16(fingerprint.GetVersion())
+		tlsVersMax, tlsVersMin = ver, ver
+	}
 	return
+}
+
+// fingerprintExtensions resolves the extension list against extensionMap, keeping the
+// observed order. Padding (21) and pre_shared_key (41) have to trail the rest, same as in
+// BrowserToClientHelloSpec, and the GREASE extensions bracket the whole list.
+func fingerprintExtensions(raw []device_utils.Browser_TLSFingerprint_Extension, extensionMap map[int32]utls.TLSExtension, grease *TLSGREASEConfig) ([]utls.TLSExtension, error) {
+	type trailingExtension struct {
+		id  int
+		ext utls.TLSExtension
+	}
+
+	extensions := make([]utls.TLSExtension, 0, len(raw)+2)
+	if grease.LeadingExtension {
+		extensions = append(extensions, &utls.UtlsGREASEExtension{})
+	}
+	trailing := make([]trailingExtension, 0, 2)
+	for _, e := range raw {
+		ext, ok := extensionMap[int32(e)]
+		if !ok {
+			// Not every extension has a default, createExtension covers the rest.
+			if ext, ok = createExtension(uint16(e)); !ok {
+				return nil, fmt.Errorf("extension not supported: %s", e)
+			}
+		}
+		if e == 21 || e == 41 {
+			trailing = append(trailing, trailingExtension{id: int(e), ext: ext})
+			continue
+		}
+		extensions = append(extensions, ext)
+	}
+	sort.Slice(trailing, func(i, j int) bool { return trailing[i].id < trailing[j].id })
+	for _, t := range trailing {
+		extensions = append(extensions, t.ext)
+	}
+	if grease.TrailingExtension {
+		extensions = append(extensions, &utls.UtlsGREASEExtension{})
+	}
+	return extensions, nil
+}
+
+// applyFingerprintExtensionData overrides the defaults in extensionMap with the
+// per-extension contents captured in the fingerprint.
+func applyFingerprintExtensionData(extensionMap map[int32]utls.TLSExtension, extensionData []*device_utils.Browser_TLSFingerprint_ExtensionData, grease *TLSGREASEConfig) {
+	for _, data := range extensionData {
+		switch data.GetExtensionId() {
+		case 13:
+			if d := data.GetSignatureAlgorithms(); d != nil {
+				schemes := make([]utls.SignatureScheme, 0, len(d.GetSupportedSignatureAlgorithms()))
+				for _, scheme := range d.GetSupportedSignatureAlgorithms() {
+					schemes = append(schemes, utls.SignatureScheme(scheme))
+				}
+				extensionMap[13] = &utls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: schemes}
+			}
+		case 16:
+			if d := data.GetApplicationLayerProtocolNegotiation(); d != nil {
+				extensionMap[16] = &utls.ALPNExtension{AlpnProtocols: d.GetProtocols()}
+			}
+		case 27:
+			if d := data.GetCompressCertificate(); d != nil {
+				algos := make([]utls.CertCompressionAlgo, 0, len(d.GetAlgorithms()))
+				for _, algo := range d.GetAlgorithms() {
+					algos = append(algos, utls.CertCompressionAlgo(algo))
+				}
+				extensionMap[27] = &utls.UtlsCompressCertExtension{Algorithms: algos}
+			}
+		case 28:
+			if d := data.GetRecordSizeLimit(); d != nil {
+				extensionMap[28] = &utls.FakeRecordSizeLimitExtension{Limit: uint16(d.GetLimit())}
+			}
+		case 43:
+			if d := data.GetSupportedVersions(); d != nil {
+				versions := make([]uint16, 0, len(d.GetVersions())+1)
+				if grease.SupportedVersions {
+					versions = append(versions, utls.GREASE_PLACEHOLDER)
+				}
+				for _, version := range d.GetVersions() {
+					versions = append(versions, uint16(version))
+				}
+				extensionMap[43] = &utls.SupportedVersionsExtension{Versions: versions}
+			}
+		case 45:
+			if d := data.GetPskKeyExchangeModes(); d != nil {
+				modes := make([]uint8, 0, len(d.GetModes()))
+				for _, mode := range d.GetModes() {
+					modes = append(modes, uint8(mode))
+				}
+				extensionMap[45] = &utls.PSKKeyExchangeModesExtension{Modes: modes}
+			}
+		case 51:
+			if d := data.GetKeyShareExtension(); d != nil {
+				shares := make([]utls.KeyShare, 0, len(d.GetKeyShares())+1)
+				if grease.KeyShare {
+					shares = append(shares, utls.KeyShare{Group: utls.CurveID(utls.GREASE_PLACEHOLDER), Data: []byte{0}})
+				}
+				for _, share := range d.GetKeyShares() {
+					shares = append(shares, utls.KeyShare{Group: utls.CurveID(share.GetGroup()), Data: share.GetData()})
+				}
+				extensionMap[51] = &utls.KeyShareExtension{KeyShares: shares}
+			}
+		case 17513:
+			if d := data.GetExtensionApplicationsSettings(); d != nil {
+				extensionMap[17513] = &utls.ApplicationSettingsExtension{SupportedProtocols: d.GetProtocols()}
+			}
+		case 17613:
+			if d := data.GetExtensionApplicationsSettings(); d != nil {
+				extensionMap[17613] = &utls.ApplicationSettingsExtensionNew{SupportedProtocols: d.GetProtocols()}
+			}
+		case 65037:
+			if d := data.GetExtensionEncryptedClientHello(); d != nil {
+				suites := make([]utls.HPKESymmetricCipherSuite, 0, len(d.GetCandidateCipherSuites()))
+				for _, suite := range d.GetCandidateCipherSuites() {
+					suites = append(suites, utls.HPKESymmetricCipherSuite{
+						KdfId:  utls.HPKE_KDF_ID(suite.GetKdfId()),
+						AeadId: utls.HPKE_AEAD_ID(suite.GetAeadId()),
+					})
+				}
+				payloadLens := make([]uint16, 0, len(d.GetCandidatePayloadLens()))
+				for _, payloadLen := range d.GetCandidatePayloadLens() {
+					payloadLens = append(payloadLens, uint16(payloadLen))
+				}
+				extensionMap[65037] = &utls.GREASEEncryptedClientHelloExtension{
+					CandidateCipherSuites: suites,
+					CandidatePayloadLens:  payloadLens,
+				}
+			}
+		case 65281:
+			if d := data.GetExtensionRenegotiationInfo(); d != nil {
+				extensionMap[65281] = &utls.RenegotiationInfoExtension{
+					Renegotiation: utls.RenegotiationSupport(d.GetRenegotiationSupport()),
+				}
+			}
+		}
+	}
 }
