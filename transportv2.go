@@ -728,8 +728,16 @@ func createExtension(extensionId uint16, options ...extensionOption) (utls.TLSEx
 	case 65037:
 		// https://github.com/Noooste/azuretls-client/blob/3012ac665ef7984f06feb375daa12e00be044567/ja3.go#L419C3-L436C6
 		if option.ext != nil {
-			extV := *(option.ext.(*utls.GREASEEncryptedClientHelloExtension))
-			return &extV, true
+			src := option.ext.(*utls.GREASEEncryptedClientHelloExtension)
+			// Never copy the struct itself: it embeds a sync.Once and utls requires
+			// fresh randomness (config_id, payload) per ClientHello.
+			extV := &utls.GREASEEncryptedClientHelloExtension{
+				CandidateCipherSuites: append([]utls.HPKESymmetricCipherSuite(nil), src.CandidateCipherSuites...),
+				CandidateConfigIds:    append([]uint8(nil), src.CandidateConfigIds...),
+				EncapsulatedKey:       append([]byte(nil), src.EncapsulatedKey...),
+				CandidatePayloadLens:  append([]uint16(nil), src.CandidatePayloadLens...),
+			}
+			return extV, true
 		}
 		extV := &utls.GREASEEncryptedClientHelloExtension{
 			CandidateCipherSuites: []utls.HPKESymmetricCipherSuite{
