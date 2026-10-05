@@ -2,7 +2,7 @@ module github.com/BRUHItsABunny/gOkHttp-ja3spoof
 
 go 1.27.0
 
-replace github.com/refraction-networking/utls => github.com/BRUHItsABunny/utls v1.8.2-go1270
+replace github.com/refraction-networking/utls => github.com/BRUHItsABunny/utls v1.8.2-chrome-154-fix
 
 require (
 	github.com/BRUHItsABunny/gOkHttp v0.3.11
